@@ -4,6 +4,7 @@ const { Terminal } = require('xterm');
 const { FitAddon } = require('xterm-addon-fit');
 const { WebLinksAddon } = require('xterm-addon-web-links');
 
+const gameState = require('./gameState');
 const LoginAutomator = require('./routines/loginAutomator');
 const MudAutomator = require('./routines/mudAutomator');
 
@@ -16,7 +17,7 @@ const term = new Terminal({
   fontSize: 14,
   fontFamily: 'monospace',
   theme: {
-    background: '#0A0A0F',
+    background: '#000000',
     foreground: '#ffffff',
   },
   scrollback: 1000,  // Add scrollback buffer
@@ -30,6 +31,7 @@ term.loadAddon(webLinksAddon);
 
 // Initialize the terminal in the 'terminal' div
 const terminalElement = document.getElementById('terminal');
+const debuggerElement = document.getElementById('debugger');
 term.open(terminalElement);
 term.write('\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\r\n\x1b[0m');
 fitAddon.fit();
@@ -64,6 +66,18 @@ telnetSocket.on('will', (option) => {
 
 let currentRoutine = null;
 
+function updateDebugger(info) {
+  const debugInfo = {
+    mudAutomator: info,
+    gameState: {
+      isLoggedIn: gameState.isLoggedIn,
+      hasEnteredGame: gameState.hasEnteredGame,
+      currentRoom: gameState.currentRoom
+    }
+  };
+  debuggerElement.innerHTML = `<pre>${JSON.stringify(debugInfo, null, 2)}</pre>`;
+}
+
 function startLoginRoutine() {
   currentRoutine = new LoginAutomator(telnetSocket, onLoginComplete);
 }
@@ -71,22 +85,23 @@ function startLoginRoutine() {
 function onLoginComplete() {
   console.log('Login automation complete');
   loginAutomator = null; // Uninstantiate the LoginAutomator
-  currentRoutine = new MudAutomator(telnetSocket);
+  currentRoutine = new MudAutomator(telnetSocket, updateDebugger);
 }
 
 startLoginRoutine();
 
-// Modify the existing data handler
+// Modify the existing data handler to handle server input
 telnetSocket.on('data', (data) => {
   term.write(data);
-  term.scrollToBottom();
+  // term.scrollToBottom();
   if (currentRoutine) {
-    currentRoutine.parse(data);  // Add this line to parse incoming data
+    currentRoutine.parse(data);
   }
 });
 
 // Handle user input
 term.onData((data) => {
+  console.log('User input:', data);
   telnetSocket.write(Buffer.from(data, 'utf8'));
 });
 
