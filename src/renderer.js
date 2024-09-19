@@ -3,6 +3,7 @@ const TelnetSocket = require('telnet-stream').TelnetSocket;
 const { Terminal } = require('xterm');
 const { FitAddon } = require('xterm-addon-fit');
 const { WebLinksAddon } = require('xterm-addon-web-links');
+const MUDAutomator = require('./automator');
 
 // Create a new xterm.js terminal
 const term = new Terminal({
@@ -59,10 +60,14 @@ telnetSocket.on('will', (option) => {
   }
 });
 
-// Handle incoming data
+// Create MUDAutomator instance
+const mudAutomator = new MUDAutomator(telnetSocket);
+
+// Modify the existing data handler
 telnetSocket.on('data', (data) => {
   term.write(data);
-  term.scrollToBottom();  // Scroll to bottom on new data
+  term.scrollToBottom();
+  mudAutomator.parse(data);  // Add this line to parse incoming data
 });
 
 // Handle user input
