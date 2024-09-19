@@ -9,6 +9,7 @@ class MudAutomator {
     this.messageBuffer = '';
     this.splitPattern = '[79D\u001b[K\u001b[0;37m[HP=';
     this.maxRawDataBufferSize = 10; // Store last 10 raw data chunks
+    this.potentialRoomName = null;
   }
 
   debug(info) {
@@ -63,30 +64,35 @@ class MudAutomator {
     if (line.includes('You are hungry')) {
       this.sendCommand('eat food');
     }
-    
+  }
+
+  updateRoomInfo(line) {
+    // Update room name
+    if (line.includes('[1;36m')) { // Bright teal color for room name
+      this.potentialRoomName = line.split('[1;36m')[1].split('[0m')[0].trim();
+      console.log('Potential Room Name:', this.potentialRoomName);
+    }
+
     // Handle "Obvious exits" information
-    if (line.includes('Obvious exits:')) {
+    if (line.includes('[0;32mObvious exits:')) { // Dark green color for exits
       const exitsPart = line.split(':')[1];
       if (exitsPart) {
         const exits = exitsPart.trim().split(',')
           .map(exit => exit.trim())
-          .map(exit => exit.replace(/[A-Z]\b./g, ''));  // Remove uppercase letter, backspace, and following character
+          .map(exit => exit.replace(/[A-Z]\b./g, '')); // Remove uppercase letter, backspace, and following character
         console.log('Obvious exits:', exits);
         gameState.currentRoom.exits = exits;
         
+        // Validate and set the room name
+        if (this.potentialRoomName) {
+          gameState.currentRoom.name = this.potentialRoomName;
+          console.log('Room Name confirmed:', this.potentialRoomName);
+          this.potentialRoomName = null; // Reset after confirming
+        }
       }
     }
-  }
 
-  updateRoomInfo(line) {
-    // Example: Update room information based on ANSI color codes
-    if (line.includes('[1;36m')) { // Bright teal color for room name
-      const roomName = line.split('[1;36m')[1].split('[0m')[0].trim();
-      console.log('Room Name:', roomName);
-      gameState.currentRoom.name = roomName;
-    }
-
-    // Add more conditions for other room information (exits, map number, room number)
+    // Add more conditions for other room information (map number, room number)
     // based on their specific ANSI color codes or patterns
   }
 
