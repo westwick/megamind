@@ -3,7 +3,9 @@ const TelnetSocket = require('telnet-stream').TelnetSocket;
 const { Terminal } = require('xterm');
 const { FitAddon } = require('xterm-addon-fit');
 const { WebLinksAddon } = require('xterm-addon-web-links');
-const MUDAutomator = require('./automator');
+
+const LoginAutomator = require('./routines/loginAutomator');
+const MudAutomator = require('./routines/mudAutomator');
 
 // Create a new xterm.js terminal
 const term = new Terminal({
@@ -29,7 +31,7 @@ term.loadAddon(webLinksAddon);
 // Initialize the terminal in the 'terminal' div
 const terminalElement = document.getElementById('terminal');
 term.open(terminalElement);
-term.write('\r\n*** Megamind Initialized ***\r\n');
+term.write('\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\r\n\x1b[0m');
 fitAddon.fit();
 
 // Telnet connection parameters
@@ -39,7 +41,7 @@ const telnetParams = {
 };
 
 const socket = net.createConnection(telnetParams.port, telnetParams.host, () => {
-  term.write('\r\n*** Connected to Telnet server ***\r\n');
+  term.write('\x1b[44m\x1b[37m*** Connected to Server ***\r\n\x1b[0m');
 });
 
 // Wrap the socket with TelnetSocket to handle Telnet negotiations
@@ -60,14 +62,27 @@ telnetSocket.on('will', (option) => {
   }
 });
 
-// Create MUDAutomator instance
-const mudAutomator = new MUDAutomator(telnetSocket);
+let currentRoutine = null;
+
+function startLoginRoutine() {
+  currentRoutine = new LoginAutomator(telnetSocket, onLoginComplete);
+}
+
+function onLoginComplete() {
+  console.log('Login automation complete');
+  loginAutomator = null; // Uninstantiate the LoginAutomator
+  currentRoutine = new MudAutomator(telnetSocket);
+}
+
+startLoginRoutine();
 
 // Modify the existing data handler
 telnetSocket.on('data', (data) => {
   term.write(data);
   term.scrollToBottom();
-  mudAutomator.parse(data);  // Add this line to parse incoming data
+  if (currentRoutine) {
+    currentRoutine.parse(data);  // Add this line to parse incoming data
+  }
 });
 
 // Handle user input
@@ -77,12 +92,12 @@ term.onData((data) => {
 
 // Handle connection close
 telnetSocket.on('close', () => {
-  term.write('\r\n*** Connection closed ***\r\n');
+  term.write('\x1b[44m\x1b[37m\r\n*** Connection Closed ***\r\n\x1b[0m');
 });
 
 // Handle errors
 telnetSocket.on('error', (err) => {
-  term.write(`\r\n*** Error: ${err.message} ***\r\n`);
+  term.write(`\x1b[44m\x1b[37m\r\n*** Error: ${err.message} ***\r\n\x1b[0m`);
 });
 
 // Adjust terminal size on window resize

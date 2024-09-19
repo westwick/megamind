@@ -1,8 +1,9 @@
-const gameState = require('./gameState');
+const gameState = require('../gameState');
 
-class MUDAutomator {
-    constructor(telnetSocket) {
+class LoginAutomator {
+    constructor(telnetSocket, onLoginComplete) {
       this.telnetSocket = telnetSocket;
+      this.onLoginComplete = onLoginComplete;
       this.loginInfo = {
         username: 'megamind',
         password: 'tester1'
@@ -13,7 +14,7 @@ class MUDAutomator {
       const text = data.toString()
       const lines = text.split('\n');
       const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
-      console.log(lastLine);
+      console.log("fulltext:\n\n", text);
 
       if (!gameState.isLoggedIn) {
         this.handleLogin(lastLine);
@@ -31,6 +32,11 @@ class MUDAutomator {
       for (let line of lines) {
         const cleanLine = this.stripAnsi(line).trim();
         this.scanForSpecificContent(cleanLine);
+      }
+
+      // Check if login automation is complete
+      if (gameState.isLoggedIn && gameState.hasEnteredGame) {
+        this.onLoginComplete();
       }
     }
 
@@ -57,8 +63,6 @@ class MUDAutomator {
         this.sendCommand('\/go majormud');
         gameState.hasSentCustomCommand = true;
       }
-
-      // Add more conditions here for other specific content
     }
 
     stripAnsi(str) {
@@ -68,6 +72,7 @@ class MUDAutomator {
     sendCommand(command) {
       this.telnetSocket.write(Buffer.from(command + '\r', 'utf8'));
     }
+    
   }
   
-  module.exports = MUDAutomator;
+  module.exports = LoginAutomator;
