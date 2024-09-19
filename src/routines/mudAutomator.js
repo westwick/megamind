@@ -1,4 +1,5 @@
 const gameState = require("../gameState");
+const { ipcRenderer } = require("electron");
 
 class MudAutomator {
   constructor(telnetSocket, debugCallback) {
@@ -94,6 +95,8 @@ class MudAutomator {
           this.potentialRoomName = null; // Reset after confirming
         }
       }
+      
+      ipcRenderer.send("update-room", gameState.currentRoom);
     }
 
     // Add more conditions for other room information (map number, room number)

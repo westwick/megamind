@@ -1,12 +1,12 @@
 const gameState = require("../gameState");
 
 class LoginAutomator {
-  constructor(telnetSocket, onLoginComplete) {
+  constructor(telnetSocket, onLoginComplete, username, password) {
     this.telnetSocket = telnetSocket;
     this.onLoginComplete = onLoginComplete;
     this.loginInfo = {
-      username: "megamind",
-      password: "tester1",
+      username: username,
+      password: password,
     };
   }
 
@@ -36,7 +36,7 @@ class LoginAutomator {
 
     // Check if login automation is complete
     if (gameState.isLoggedIn && gameState.hasEnteredGame) {
-      this.onLoginComplete();
+      this.onLoginComplete(this.telnetSocket);
     }
   }
 
