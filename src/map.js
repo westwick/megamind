@@ -50,7 +50,7 @@ window.testUpdate = function () {
 // Listen for the test update
 ipcRenderer.on("test-update-room", (event, room) => {
   console.log("Received test update:", room);
-  ipcRenderer.emit("update-room", event, room);
+  ipcRenderer.send("update-room", room);
 });
 
 console.log("Map.js setup complete");
