@@ -12,6 +12,7 @@ class GameState {
       items: [],
       entities: [],
     };
+    this.onlineUsers = [];
   }
 
   reset() {
@@ -27,6 +28,7 @@ class GameState {
       items: [],
       entities: [],
     };
+    this.onlineUsers = [];
   }
 
   updateRoom(name, exits, mapNumber, roomNumber) {
@@ -34,6 +36,10 @@ class GameState {
     this.currentRoom.exits = exits;
     this.currentRoom.mapNumber = mapNumber;
     this.currentRoom.roomNumber = roomNumber;
+  }
+
+  updateOnlineUsers(users) {
+    this.onlineUsers = users;
   }
 }
 

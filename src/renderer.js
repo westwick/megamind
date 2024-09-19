@@ -7,6 +7,7 @@ const { FitAddon } = require("xterm-addon-fit");
 const { WebLinksAddon } = require("xterm-addon-web-links");
 
 const gameState = require("./gameState");
+const playerStats = require("./playerStats");
 const LoginAutomator = require("./routines/loginAutomator");
 const MudAutomator = require("./routines/mudAutomator");
 
@@ -126,7 +127,8 @@ function updateDebugger(info) {
 
   const debugInfo = {
     mudAutomator: info,
-    gameState
+    playerStats: playerStats.getStats(),
+    gameState,
   };
 
   debuggerElementRef.innerHTML = `<pre>${JSON.stringify(

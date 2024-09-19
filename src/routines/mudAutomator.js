@@ -1,4 +1,5 @@
 const gameState = require("../gameState");
+const playerStats = require("../playerStats");
 const { ipcRenderer } = require("electron");
 
 class MudAutomator {
@@ -8,9 +9,12 @@ class MudAutomator {
     this.debugCallback = debugCallback;
     this.rawDataBuffer = [];
     this.messageBuffer = "";
-    this.splitPattern = "[79D\u001b[K\u001b[0;37m[HP=";
+    this.splitPattern = /\[79D\[K|\[0;37m\[HP=/;
     this.maxRawDataBufferSize = 10; // Store last 10 raw data chunks
     this.potentialRoomName = null;
+    this.incompleteLineBuffer = "";
+    playerStats.startSession();
+    this.startStatsUpdateInterval();
   }
 
   debug(info) {
@@ -28,37 +32,81 @@ class MudAutomator {
       this.rawDataBuffer.shift();
     }
 
-    // Process the data
-    this.messageBuffer += data.toString();
-    const parts = this.messageBuffer.split(this.splitPattern);
+    // Prepend any incomplete line from the previous chunk
+    let fullData = this.incompleteLineBuffer + data.toString();
+    this.incompleteLineBuffer = "";
 
-    // Process all complete messages
-    while (parts.length > 1) {
-      const completeMessage = parts.shift();
-      this.processMessage(completeMessage);
+    // Split the data into lines
+    const lines = fullData.split("\n");
+
+    // If the last line is incomplete, store it for the next chunk
+    if (!fullData.endsWith("\n")) {
+      this.incompleteLineBuffer = lines.pop();
     }
 
-    // Keep the last (potentially incomplete) part in the buffer
-    this.messageBuffer = parts[0];
+    // Process complete lines
+    for (let line of lines) {
+      this.processLine(line);
+    }
 
     // Debug information
     this.debug({
       rawDataBufferLength: this.rawDataBuffer.length,
-      messageBufferLength: this.messageBuffer.length,
-      lastProcessedMessage: parts[0],
+      incompleteLineBuffer: this.incompleteLineBuffer,
+      lastProcessedLine: lines[lines.length - 1],
     });
+  }
+
+  processLine(line) {
+    line = line.trim();
+    if (line) {
+      this.handleMUDCommands(line);
+      this.updateRoomInfo(line);
+      this.handleCombatState(line);
+      this.handleEntityEnteringRoom(line);
+      this.handleExperienceGain(line);
+      this.handleWhoCommand(line);
+    }
   }
 
   processMessage(message) {
     const lines = message.split("\n");
     for (let line of lines) {
-      if (line.trim()) {
+      line = line.trim();
+      if (line) {
         this.handleMUDCommands(line);
         this.updateRoomInfo(line);
         this.handleCombatState(line);
         this.handleEntityEnteringRoom(line);
+        this.handleExperienceGain(line);
       }
     }
+    // Process the entire message for the 'who' command output
+    this.handleWhoCommand(message);
+  }
+
+  handleExperienceGain(line) {
+    const match = line.match(/You gain (\d+) experience\./);
+    if (match) {
+      const expGained = parseInt(match[1], 10);
+      playerStats.addExperience(expGained);
+      console.log(`Gained ${expGained} experience`);
+
+      // Notify the renderer about the updated experience
+      this.updatePlayerStats();
+    }
+  }
+
+  updatePlayerStats() {
+    const stats = playerStats.getStats();
+    ipcRenderer.send("update-player-stats", stats);
+  }
+
+  startStatsUpdateInterval() {
+    // Update stats every 5 seconds
+    setInterval(() => {
+      this.updatePlayerStats();
+    }, 5000);
   }
 
   handleMUDCommands(line) {
@@ -101,11 +149,13 @@ class MudAutomator {
       gameState.currentRoom.entities = entities;
       console.log("Entities in room:", entities);
 
-      // Attempt to attack the first entity if not already in combat
+      // Attempt to attack the first non-player entity if not already in combat
       if (entities.length > 0 && !gameState.inCombat) {
-        const targetEntity = entities[0];
-        this.sendCommand(`attack ${targetEntity}`);
-        console.log(`Attempting to attack: ${targetEntity}`);
+        const targetEntity = entities.find((entity) => !this.isPlayer(entity));
+        if (targetEntity) {
+          this.sendCommand(`attack ${targetEntity}`);
+          console.log(`Attempting to attack: ${targetEntity}`);
+        }
       }
     }
 
@@ -156,18 +206,34 @@ class MudAutomator {
       // Remove any trailing characters (like periods or escape codes)
       entityName = entityName.replace(/[.\u001b].*$/, "");
 
-      gameState.currentRoom.entities.push(entityName);
-      console.log(`New entity entered the room: ${entityName}`);
+      // instead of updating everything again, lets just look in the current room
+      // and let the other room update handle the rest
+      this.sendCommand("");
 
-      // If not in combat, attempt to attack the new entity
-      if (!gameState.inCombat) {
-        this.sendCommand(`attack ${entityName}`);
-        console.log(`Attempting to attack: ${entityName}`);
-      }
+      // if (!gameState.currentRoom.entities.includes(entityName)) {
+      //   gameState.currentRoom.entities.push(entityName);
+      //   console.log(`New entity entered the room: ${entityName}`);
 
-      // Notify the renderer about the updated room state
-      ipcRenderer.send("update-room", gameState.currentRoom);
+      //   // If not in combat, attempt to attack the new entity if it's not a player
+      //   if (!gameState.inCombat && !this.isPlayer(entityName)) {
+      //     this.sendCommand(`attack ${entityName}`);
+      //     console.log(`Attempting to attack: ${entityName}`);
+      //   }
+
+      //   // Notify the renderer about the updated room state
+      //   ipcRenderer.send("update-room", gameState.currentRoom);
+      // }
     }
+  }
+
+  isPlayer(entityName) {
+    // Check if the entity name (or its first word) matches any online user
+    const entityFirstName = entityName.split(" ")[0].toLowerCase();
+    return gameState.onlineUsers.some(
+      (user) =>
+        user.toLowerCase() === entityFirstName ||
+        user.toLowerCase().startsWith(entityFirstName)
+    );
   }
 
   sendCommand(command) {
@@ -177,6 +243,30 @@ class MudAutomator {
   // Add this new method to the class
   stripAnsi(str) {
     return str.replace(/\u001b\[[0-9;]*m/g, "").replace(/\.$/, "");
+  }
+
+  handleWhoCommand(message) {
+    if (
+      message.includes(
+        "[1;30m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+      )
+    ) {
+      const lines = message.split("\n");
+      const userLines = lines.slice(1, -1); // Remove the first and last lines (separators)
+
+      const onlineUsers = userLines
+        .map((line) => {
+          const match = line.match(/\[32m([^\s]+)/);
+          return match ? match[1] : null;
+        })
+        .filter(Boolean); // Remove any null values
+
+      gameState.updateOnlineUsers(onlineUsers);
+      console.log("Updated online users:", onlineUsers);
+
+      // Notify the renderer about the updated online users
+      ipcRenderer.send("update-online-users", onlineUsers);
+    }
   }
 }
 
