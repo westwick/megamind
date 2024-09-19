@@ -126,11 +126,7 @@ function updateDebugger(info) {
 
   const debugInfo = {
     mudAutomator: info,
-    gameState: {
-      isLoggedIn: gameState.isLoggedIn,
-      hasEnteredGame: gameState.hasEnteredGame,
-      currentRoom: gameState.currentRoom,
-    },
+    gameState
   };
 
   debuggerElementRef.innerHTML = `<pre>${JSON.stringify(

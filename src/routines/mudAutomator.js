@@ -55,6 +55,8 @@ class MudAutomator {
       if (line.trim()) {
         this.handleMUDCommands(line);
         this.updateRoomInfo(line);
+        this.handleCombatState(line);
+        this.handleEntityEnteringRoom(line);
       }
     }
   }
@@ -73,6 +75,38 @@ class MudAutomator {
       // Bright teal color for room name
       this.potentialRoomName = line.split("[1;36m")[1].split("[0m")[0].trim();
       console.log("Potential Room Name:", this.potentialRoomName);
+      // Reset items and monsters when entering a new room
+      gameState.currentRoom.items = [];
+      gameState.currentRoom.entities = [];
+    }
+
+    // Handle items in the room
+    if (line.includes("[0;36mYou notice")) {
+      // Dark teal color for items
+      const itemsPart = line.split("You notice")[1].trim();
+      const items = itemsPart
+        .split(",")
+        .map((item) => item.trim().replace(/ here\.$/, ""));
+      gameState.currentRoom.items = items;
+      console.log("Items in room:", items);
+    }
+
+    // Handle monsters and players in the room
+    if (line.includes("[0;35mAlso here:")) {
+      const entitiesPart = line.split("Also here:")[1].trim();
+      const entities = entitiesPart
+        .split(",")
+        .map((entity) => this.stripAnsi(entity.trim()))
+        .filter((entity) => entity !== "");
+      gameState.currentRoom.entities = entities;
+      console.log("Entities in room:", entities);
+
+      // Attempt to attack the first entity if not already in combat
+      if (entities.length > 0 && !gameState.inCombat) {
+        const targetEntity = entities[0];
+        this.sendCommand(`attack ${targetEntity}`);
+        console.log(`Attempting to attack: ${targetEntity}`);
+      }
     }
 
     // Handle "Obvious exits" information
@@ -95,7 +129,7 @@ class MudAutomator {
           this.potentialRoomName = null; // Reset after confirming
         }
       }
-      
+
       ipcRenderer.send("update-room", gameState.currentRoom);
     }
 
@@ -103,8 +137,46 @@ class MudAutomator {
     // based on their specific ANSI color codes or patterns
   }
 
+  handleCombatState(line) {
+    if (line.includes("[0;33m*Combat Engaged*")) {
+      gameState.inCombat = true;
+      console.log("Entered combat state");
+    } else if (line.includes("[0;33m*Combat Off*")) {
+      gameState.inCombat = false;
+      console.log("Exited combat state");
+    }
+  }
+
+  handleEntityEnteringRoom(line) {
+    const match = line.match(/\[1;33m(.*?)\[0;32m/);
+    if (match) {
+      let entityName = this.stripAnsi(match[1].trim());
+      // Remove "A " or "An " from the beginning if present
+      entityName = entityName.replace(/^(A|An)\s+/i, "");
+      // Remove any trailing characters (like periods or escape codes)
+      entityName = entityName.replace(/[.\u001b].*$/, "");
+
+      gameState.currentRoom.entities.push(entityName);
+      console.log(`New entity entered the room: ${entityName}`);
+
+      // If not in combat, attempt to attack the new entity
+      if (!gameState.inCombat) {
+        this.sendCommand(`attack ${entityName}`);
+        console.log(`Attempting to attack: ${entityName}`);
+      }
+
+      // Notify the renderer about the updated room state
+      ipcRenderer.send("update-room", gameState.currentRoom);
+    }
+  }
+
   sendCommand(command) {
     this.telnetSocket.write(Buffer.from(command + "\r", "utf8"));
+  }
+
+  // Add this new method to the class
+  stripAnsi(str) {
+    return str.replace(/\u001b\[[0-9;]*m/g, "").replace(/\.$/, "");
   }
 }
 

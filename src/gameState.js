@@ -3,11 +3,14 @@ class GameState {
     this.isLoggedIn = false;
     this.hasEnteredGame = false;
     this.hasSentCustomCommand = false;
+    this.inCombat = false;
     this.currentRoom = {
       name: "",
       exits: [],
       mapNumber: 0,
       roomNumber: 0,
+      items: [],
+      entities: [],
     };
   }
 
@@ -15,11 +18,14 @@ class GameState {
     this.isLoggedIn = false;
     this.hasEnteredGame = false;
     this.hasSentCustomCommand = false;
+    this.inCombat = false;
     this.currentRoom = {
       name: "",
       exits: [],
       mapNumber: 0,
       roomNumber: 0,
+      items: [],
+      entities: [],
     };
   }
 
