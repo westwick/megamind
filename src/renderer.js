@@ -37,7 +37,7 @@ function initTerminal() {
     fontSize: 14,
     fontFamily: "monospace",
     theme: {
-      background: "#0A0A0F",
+      background: "#000000",
       foreground: "#ffffff",
     },
     scrollback: 1000, // Add scrollback buffer
@@ -132,6 +132,7 @@ function updateDebugger(info) {
       currentRoom: gameState.currentRoom,
     },
   };
+
   debuggerElementRef.innerHTML = `<pre>${JSON.stringify(
     debugInfo,
     null,
@@ -153,6 +154,7 @@ function startLoginRoutine() {
 
 function onLoginComplete(telnetSocket) {
   console.log("Login automation complete");
+
   currentRoutine = new MudAutomator(telnetSocket, updateDebugger);
 }
 

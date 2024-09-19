@@ -31,6 +31,7 @@ function createMapWindow() {
   mapWindow.loadFile(path.join(__dirname, "map.html"));
   mapWindow.webContents.openDevTools();
 
+
   mapWindow.on("closed", () => {
     mapWindow = null;
   });
