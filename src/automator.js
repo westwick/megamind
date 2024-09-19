@@ -1,3 +1,5 @@
+const gameState = require('./gameState');
+
 class MUDAutomator {
     constructor(telnetSocket) {
       this.telnetSocket = telnetSocket;
@@ -12,20 +14,51 @@ class MUDAutomator {
       const lines = text.split('\n');
       const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
       console.log(lastLine);
-  
+
+      if (!gameState.isLoggedIn) {
+        this.handleLogin(lastLine);
+      }
+
+      if (gameState.isLoggedIn && !gameState.hasEnteredGame) {
+        this.handleGameEntry(lastLine);
+      }
+
+      if (lastLine.includes('(N)onstop, (Q)uit, or (C)ontinue?')) {
+        this.sendCommand('');
+      }
+
+      // Scan all lines for specific content
+      for (let line of lines) {
+        const cleanLine = this.stripAnsi(line).trim();
+        this.scanForSpecificContent(cleanLine);
+      }
+    }
+
+    handleLogin(lastLine) {
       if (lastLine.includes('Otherwise type "new":')) {
         this.sendCommand(this.loginInfo.username);
       }
-      
-      if (text.includes('Enter your password:')) {
+
+      if (lastLine.includes('Enter your password:')) {
         this.sendCommand(this.loginInfo.password);
+        gameState.isLoggedIn = true;
+      }
+    }
+
+    handleGameEntry(lastLine) {
+      if (lastLine.includes('[MAJORMUD]:')) {
+        this.sendCommand('enter');
+        gameState.hasEnteredGame = true;
+      }
+    }
+
+    scanForSpecificContent(line) {
+      if (line.includes('Make your selection') && !gameState.hasSentCustomCommand) {
+        this.sendCommand('\/go majormud');
+        gameState.hasSentCustomCommand = true;
       }
 
-      if(lastLine.includes('(N)onstop, (Q)uit, or (C)ontinue?')) {
-        this.sendCommand('n');
-      }
-  
-      // Add more parsing logic here for other automated responses
+      // Add more conditions here for other specific content
     }
 
     stripAnsi(str) {
