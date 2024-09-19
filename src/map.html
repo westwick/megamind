@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Map and Room Info</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f0f0f0;
+      }
+      #room-info {
+        margin-bottom: 20px;
+      }
+      #map {
+        width: 100%;
+        height: 200px;
+        background-color: #ddd;
+        border: 1px solid #999;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="room-info">
+      <h2>Current Room</h2>
+      <p>Name: <span id="room-name"></span></p>
+      <p>Exits: <span id="room-exits"></span></p>
+      <p>Map: <span id="map-number"></span></p>
+      <p>Room: <span id="room-number"></span></p>
+    </div>
+    <div id="map">
+      <!-- Map will be rendered here -->
+    </div>
+
+    <script>
+      console.log("HTML file is loading map.js");
+    </script>
+    <script src="map.js"></script>
+    <script>
+      console.log("HTML file finished loading map.js");
+      if (window.testUpdate) {
+        console.log("testUpdate function is available");
+      } else {
+        console.log("testUpdate function is NOT available");
+      }
+    </script>
+  </body>
+</html>
