@@ -10,6 +10,11 @@ const gameState = require("./gameState");
 const LoginAutomator = require("./routines/loginAutomator");
 const MudAutomator = require("./routines/mudAutomator");
 
+// TODO: eliminate global state usage
+let currentRoutine = null;
+let debuggerElementRef = null;
+let fitAddon = null;
+
 function loadConfig() {
   const configPath = path.join(__dirname, "config.json");
   try {
@@ -22,37 +27,48 @@ function loadConfig() {
   }
 }
 
-// Create a new xterm.js terminal
-const term = new Terminal({
-  cols: 80,
-  rows: 24,
-  convertEol: true,
-  cursorBlink: true,
-  fontSize: 14,
-  fontFamily: "monospace",
-  theme: {
-    background: "#0A0A0F",
-    foreground: "#ffffff",
-  },
-  scrollback: 1000, // Add scrollback buffer
-});
+function initTerminal() {
+  // Create a new xterm.js terminal
+  const term = new Terminal({
+    cols: 80,
+    rows: 24,
+    convertEol: true,
+    cursorBlink: true,
+    fontSize: 14,
+    fontFamily: "monospace",
+    theme: {
+      background: "#0A0A0F",
+      foreground: "#ffffff",
+    },
+    scrollback: 1000, // Add scrollback buffer
+  });
 
-// Create and load addons
-const fitAddon = new FitAddon();
-const webLinksAddon = new WebLinksAddon();
-term.loadAddon(fitAddon);
-term.loadAddon(webLinksAddon);
+  // Create and load addons
+  fitAddon = new FitAddon();
+  const webLinksAddon = new WebLinksAddon();
+  term.loadAddon(fitAddon);
+  term.loadAddon(webLinksAddon);
 
-// Initialize the terminal in the 'terminal' div
-const terminalElement = document.getElementById("terminal");
-const debuggerElement = document.getElementById("debugger");
-term.open(terminalElement);
-term.write("\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\r\n\x1b[0m");
-fitAddon.fit();
+  // Initialize the terminal in the 'terminal' div
+  const terminalElement = document.getElementById("terminal");
+  const debuggerElement = document.getElementById("debugger");
+  term.open(terminalElement);
+  term.write("\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\r\n\x1b[0m");
+  fitAddon.fit();
 
-function connectToServer(host, port) {
+  debuggerElementRef = debuggerElement;
+  return term;
+}
+
+function connectToServer(term, host, port) {
   const socket = net.createConnection(port, host, () => {
-    term.write("\x1b[44m\x1b[37m*** Connected to Server ***\r\n\x1b[0m");
+    term.write(
+      "\x1b[44m\x1b[37m*** Connected to Server " +
+        host +
+        ":" +
+        port +
+        " ***\r\n\x1b[0m"
+    );
   });
 
   // Wrap the socket with TelnetSocket to handle Telnet negotiations
@@ -93,12 +109,21 @@ function connectToServer(host, port) {
     term.write(`\x1b[44m\x1b[37m\r\n*** Error: ${err.message} ***\r\n\x1b[0m`);
   });
 
+  // Handle user input
+  term.onData((data) => {
+    console.log("User input:", data);
+    telnetSocket.write(Buffer.from(data, "utf8"));
+  });
+
   return telnetSocket;
 }
 
-let currentRoutine = null;
-
 function updateDebugger(info) {
+  if (!debuggerElementRef) {
+    console.error("Debugger element reference not set");
+    return;
+  }
+
   const debugInfo = {
     mudAutomator: info,
     gameState: {
@@ -107,7 +132,7 @@ function updateDebugger(info) {
       currentRoom: gameState.currentRoom,
     },
   };
-  debuggerElement.innerHTML = `<pre>${JSON.stringify(
+  debuggerElementRef.innerHTML = `<pre>${JSON.stringify(
     debugInfo,
     null,
     2
@@ -116,7 +141,8 @@ function updateDebugger(info) {
 
 function startLoginRoutine() {
   const config = loadConfig();
-  const telnetSocket = connectToServer(config.server, config.port);
+  const term = initTerminal();
+  const telnetSocket = connectToServer(term, config.server, config.port);
   currentRoutine = new LoginAutomator(
     telnetSocket,
     onLoginComplete,
@@ -128,12 +154,6 @@ function startLoginRoutine() {
 function onLoginComplete(telnetSocket) {
   console.log("Login automation complete");
   currentRoutine = new MudAutomator(telnetSocket, updateDebugger);
-
-  // Handle user input
-  term.onData((data) => {
-    console.log("User input:", data);
-    telnetSocket.write(Buffer.from(data, "utf8"));
-  });
 }
 
 startLoginRoutine();
