@@ -24,16 +24,23 @@ class MudAutomator {
   }
 
   parse(data) {
-    console.log("data received:", data.toString());
+    const dataString = data.toString();
+    const hexEscapedData = dataString.replace(
+      /[\x00-\x1F\x7F-\x9F]/g,
+      (char) => {
+        return `\\x${char.charCodeAt(0).toString(16).padStart(2, "0")}`;
+      }
+    );
+    console.log("data received:", hexEscapedData);
 
     // Store raw data
-    this.rawDataBuffer.push(data.toString());
+    this.rawDataBuffer.push(dataString.toString());
     if (this.rawDataBuffer.length > this.maxRawDataBufferSize) {
       this.rawDataBuffer.shift();
     }
 
     // Prepend any incomplete line from the previous chunk
-    let fullData = this.incompleteLineBuffer + data.toString();
+    let fullData = this.incompleteLineBuffer + dataString.toString();
     this.incompleteLineBuffer = "";
 
     // Split the data into lines

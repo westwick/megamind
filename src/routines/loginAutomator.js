@@ -14,7 +14,11 @@ class LoginAutomator {
     const text = data.toString();
     const lines = text.split("\n");
     const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
-    console.log("fulltext:\n\n", text);
+
+    const hexEscapedData = text.replace(/[\x00-\x1F\x7F-\x9F]/g, (char) => {
+      return `\\x${char.charCodeAt(0).toString(16).padStart(2, "0")}`;
+    });
+    console.log("fulltext:\n\n", hexEscapedData);
 
     if (!gameState.isLoggedIn) {
       this.handleLogin(lastLine);
