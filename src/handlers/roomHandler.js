@@ -28,6 +28,8 @@ class RoomHandler {
         console.log("[roomHandler] new room", roomEvent);
         this.eventBus.emit("new-room", roomEvent);
         this.potentialRoomName = null;
+        this.potentialRoomItems = null;
+        this.potentialRoomEntities = null;
       }
     });
 
