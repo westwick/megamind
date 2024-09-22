@@ -1,4 +1,4 @@
-const { RoomLookup } = require("./rooms");
+const { RoomLookup } = require("../data/rooms");
 
 class Pathfinding {
   constructor(roomLookup) {
