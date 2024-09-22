@@ -67,8 +67,14 @@ class MudAutomator {
 
   processMessage(messages) {
     for (let msg of messages) {
-      console.log(msg);
-      if (msg) {
+      if (msg && msg.spans && msg.spans.length > 0) {
+        // means this was more than just a newline
+        console.log(
+          "msg: " + msg.spans
+            ? msg.spans[msg.spans.length - 1].text
+            : "<no text>",
+          msg
+        );
         this.updateRoomInfo(msg);
         /*this.handleCombatState(msg);
         this.handleEntityEnteringRoom(msg);
