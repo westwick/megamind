@@ -1,6 +1,7 @@
 const gameState = require("../gameState");
 const playerStats = require("../playerStats");
 const { ipcRenderer } = require("electron");
+const { parse } = require("ansicolor");
 
 class MudAutomator {
   constructor(telnetSocket, debugCallback) {
@@ -25,13 +26,13 @@ class MudAutomator {
 
   parse(data) {
     const dataString = data.toString();
-    const hexEscapedData = dataString.replace(
+    /*const hexEscapedData = dataString.replace(
       /[\x00-\x1F\x7F-\x9F]/g,
       (char) => {
         return `\\x${char.charCodeAt(0).toString(16).padStart(2, "0")}`;
       }
     );
-    console.log("data received:", hexEscapedData);
+    console.log("data received:", hexEscapedData);*/
 
     // Store raw data
     this.rawDataBuffer.push(dataString.toString());
@@ -44,52 +45,38 @@ class MudAutomator {
     this.incompleteLineBuffer = "";
 
     // Split the data into lines
-    const lines = fullData.split("\n");
+    const lines = fullData.split("\r\n");
 
     // If the last line is incomplete, store it for the next chunk
-    if (!fullData.endsWith("\n")) {
+    if (!fullData.endsWith("\r\n")) {
       this.incompleteLineBuffer = lines.pop();
     }
 
-    // Process complete lines
-    for (let line of lines) {
-      this.processLine(line);
-    }
+    const parsedSpans = [];
+    lines.map((line) => parsedSpans.push(parse(line)));
+    this.processMessage(parsedSpans);
 
     // Debug information
     this.debug({
       rawDataBufferLength: this.rawDataBuffer.length,
       incompleteLineBuffer: this.incompleteLineBuffer,
       lastProcessedLine: lines[lines.length - 1],
+      //parsedSpans: parsedSpans,
     });
   }
 
-  processLine(line) {
-    line = line.trim();
-    if (line) {
-      this.handleMUDCommands(line);
-      this.updateRoomInfo(line);
-      this.handleCombatState(line);
-      this.handleEntityEnteringRoom(line);
-      this.handleExperienceGain(line);
-      this.handleWhoCommand(line);
-    }
-  }
-
-  processMessage(message) {
-    const lines = message.split("\n");
-    for (let line of lines) {
-      line = line.trim();
-      if (line) {
-        this.handleMUDCommands(line);
-        this.updateRoomInfo(line);
-        this.handleCombatState(line);
-        this.handleEntityEnteringRoom(line);
-        this.handleExperienceGain(line);
+  processMessage(messages) {
+    for (let msg of messages) {
+      console.log(msg);
+      if (msg) {
+        this.updateRoomInfo(msg);
+        /*this.handleCombatState(msg);
+        this.handleEntityEnteringRoom(msg);
+        this.handleExperienceGain(msg);*/
       }
     }
     // Process the entire message for the 'who' command output
-    this.handleWhoCommand(message);
+    this.handleWhoCommand(messages);
   }
 
   handleExperienceGain(line) {
@@ -116,25 +103,63 @@ class MudAutomator {
     }, 5000);
   }
 
-  handleMUDCommands(line) {
-    // Add MUD-specific command handling here
-    // For example:
-    if (line.includes("You are hungry")) {
-      this.sendCommand("eat food");
-    }
-  }
-
+  /*
+   "spans": [
+          {
+            "code": {
+              "value": 1,
+              "type": "style",
+              "subtype": "bright",
+              "str": "\u001b[1m",
+              "isBrightness": true
+            },
+            "text": "\u001b[79D\u001b[K",
+            "css": "",
+            "bold": false,
+            "inverse": false,
+            "italic": false,
+            "underline": false,
+            "bright": false,
+            "dim": false
+          },
+          {
+            "code": {
+              "str": "",
+              "isBrightness": false
+            },
+            "text": "Darkwood Forest, Webbed Clearing\r",
+            "css": "font-weight: bold;color:rgba(0,204,255,1);",
+            "color": {
+              "name": "cyan",
+              "bright": true,
+              "dim": false
+            },
+            "bold": true,
+            "inverse": false,
+            "italic": false,
+            "underline": false,
+            "bright": false,
+            "dim": false
+          }
+        ]
+      },
+  */
   updateRoomInfo(line) {
     // Update room name
-    if (line.includes("[1;36m")) {
-      // Bright teal color for room name
-      this.potentialRoomName = line.split("[1;36m")[1].split("[0m")[0].trim();
+    if (
+      line.spans &&
+      line.spans.length == 2 &&
+      line.spans[1].color &&
+      line.spans[1].color.bright &&
+      line.spans[1].color.name === "cyan"
+    ) {
+      this.potentialRoomName = line.spans[1].text;
       console.log("Potential Room Name:", this.potentialRoomName);
       // Reset items and monsters when entering a new room
       gameState.currentRoom.items = [];
       gameState.currentRoom.entities = [];
     }
-
+    /*
     // Handle items in the room
     if (line.includes("[0;36mYou notice")) {
       // Dark teal color for items
@@ -189,7 +214,7 @@ class MudAutomator {
 
       ipcRenderer.send("update-room", gameState.currentRoom);
     }
-
+*/
     // Add more conditions for other room information (map number, room number)
     // based on their specific ANSI color codes or patterns
   }

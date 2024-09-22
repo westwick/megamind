@@ -112,7 +112,7 @@ function connectToServer(term, host, port) {
 
   // Handle user input
   term.onData((data) => {
-    console.log("User input:", data);
+    //console.log("User input:", data);
     telnetSocket.write(Buffer.from(data, "utf8"));
   });
 
