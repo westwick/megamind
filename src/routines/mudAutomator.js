@@ -1,7 +1,7 @@
 const gameState = require("../gameState");
 const playerStats = require("../playerStats");
 const { ipcRenderer } = require("electron");
-const { parse } = require("ansicolor");
+const { strip, parse } = require("ansicolor");
 
 class MudAutomator {
   constructor(telnetSocket, debugCallback) {
@@ -9,10 +9,7 @@ class MudAutomator {
     this.telnetSocket = telnetSocket;
     this.debugCallback = debugCallback;
     this.rawDataBuffer = [];
-    this.messageBuffer = "";
-    this.splitPattern = /\[79D\[K|\[0;37m\[HP=/;
     this.maxRawDataBufferSize = 10; // Store last 10 raw data chunks
-    this.potentialRoomName = null;
     this.incompleteLineBuffer = "";
     playerStats.startSession();
     this.startStatsUpdateInterval();
@@ -26,13 +23,6 @@ class MudAutomator {
 
   parse(data) {
     const dataString = data.toString();
-    /*const hexEscapedData = dataString.replace(
-      /[\x00-\x1F\x7F-\x9F]/g,
-      (char) => {
-        return `\\x${char.charCodeAt(0).toString(16).padStart(2, "0")}`;
-      }
-    );
-    console.log("data received:", hexEscapedData);*/
 
     // Store raw data
     this.rawDataBuffer.push(dataString.toString());
@@ -61,28 +51,30 @@ class MudAutomator {
       rawDataBufferLength: this.rawDataBuffer.length,
       incompleteLineBuffer: this.incompleteLineBuffer,
       lastProcessedLine: lines[lines.length - 1],
-      //parsedSpans: parsedSpans,
     });
   }
 
   processMessage(messages) {
+    var lines = [];
     for (let msg of messages) {
       if (msg && msg.spans && msg.spans.length > 0) {
-        // means this was more than just a newline
-        console.log(
-          "msg: " + msg.spans
-            ? msg.spans[msg.spans.length - 1].text
-            : "<no text>",
-          msg
-        );
-        this.updateRoomInfo(msg);
-        /*this.handleCombatState(msg);
-        this.handleEntityEnteringRoom(msg);
-        this.handleExperienceGain(msg);*/
+        var strippedSpans = msg.spans.map((x) => {
+          var stripped = strip(x.text);
+          return stripped; //.replace(/.\b|\b./g, "");
+        });
+
+        var line = strippedSpans.map((x) => x).join("");
+        lines.push(line);
+        ipcRenderer.send("new-message-line", {
+          line: line,
+          message: msg,
+        });
+
+        console.log("msg: " + line, msg);
       }
     }
-    // Process the entire message for the 'who' command output
-    this.handleWhoCommand(messages);
+    // Process the entire message for the 'who' command output or similar
+    ipcRenderer.send("new-message-batch", { lines: lines, messages: messages });
   }
 
   handleExperienceGain(line) {
@@ -150,7 +142,7 @@ class MudAutomator {
         ]
       },
   */
-  updateRoomInfo(line) {
+  updateRoomName(line) {
     // Update room name
     if (
       line.spans &&
@@ -159,11 +151,9 @@ class MudAutomator {
       line.spans[1].color.bright &&
       line.spans[1].color.name === "cyan"
     ) {
-      this.potentialRoomName = line.spans[1].text;
-      console.log("Potential Room Name:", this.potentialRoomName);
-      // Reset items and monsters when entering a new room
-      gameState.currentRoom.items = [];
-      gameState.currentRoom.entities = [];
+      console.log("Potential Room Name:", line.spans[1].text);
+
+      ipcRenderer.send("new-room-name", line.spans[1].text);
     }
     /*
     // Handle items in the room
