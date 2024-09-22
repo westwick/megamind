@@ -83,6 +83,12 @@ class RoomLookup {
   getRoomsByName(name) {
     return this.nameToMapRoom[name] || [];
   }
+
+  getRoomsByNameAndExits(name, exits) {
+    var candidateRooms = this.getRoomsByName(name);
+    // TODO: filter candidateRooms by exits
+    return candidateRooms || [];
+  }
 }
 
 module.exports = { Room, RoomLookup };

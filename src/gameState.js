@@ -1,5 +1,6 @@
 class GameState {
-  constructor() {
+  constructor(eventBus, roomLookup) {
+    this.eventBus = eventBus;
     this.isLoggedIn = false;
     this.hasEnteredGame = false;
     this.hasSentCustomCommand = false;
@@ -13,6 +14,13 @@ class GameState {
       entities: [],
     };
     this.onlineUsers = [];
+    this.roomLookup = roomLookup;
+
+    this.eventBus.on("new-room", (room) => {
+      // TODO, update mudAutomator to pass in roomLookup
+      //this.roomLookup.getRoomsByNameAndExits(room.roomName, room.exits);
+      this.currentRoom = room;
+    });
   }
 
   reset() {
@@ -43,4 +51,4 @@ class GameState {
   }
 }
 
-module.exports = new GameState();
+module.exports = GameState;

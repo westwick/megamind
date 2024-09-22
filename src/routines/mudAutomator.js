@@ -1,4 +1,4 @@
-const gameState = require("../gameState");
+const GameState = require("../gameState");
 const playerStats = require("../playerStats");
 const EventEmitter = require("events");
 const { strip, parse } = require("ansicolor");
@@ -16,6 +16,7 @@ class MudAutomator {
     this.startStatsUpdateInterval();
     this.eventBus = new EventEmitter();
     this.roomHandler = new RoomHandler(this.eventBus);
+    this.gameState = new GameState(this.eventBus);
   }
 
   debug(info) {
