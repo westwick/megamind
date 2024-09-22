@@ -18,6 +18,7 @@ class Room {
       U: parseExit(data.U),
       D: parseExit(data.D),
     };
+    this.RawJSON = JSON.stringify(data);
 
     // uncomment this to see all the data but dont leave it checked in to save memory
     //Object.assign(this, data);
@@ -30,9 +31,14 @@ function parseExit(exit) {
   }
   const exitParts = exit.split(" ");
   const hasDoor = exitParts.length > 1;
+  const DoorDetails = exitParts.slice(1).join(" ");
   const [mapNumber, roomNumber] = exitParts[0].split("/");
 
-  return { MapNumber: mapNumber, RoomNumber: roomNumber, Door: hasDoor };
+  return {
+    MapNumber: mapNumber,
+    RoomNumber: roomNumber,
+    Door: hasDoor ? DoorDetails : {},
+  };
 }
 
 class RoomLookup {

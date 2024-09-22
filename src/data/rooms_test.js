@@ -137,15 +137,25 @@ async function main() {
   console.log("\nTest getRoomById:");
   console.log(roomById);
 
-  // Test getRoomByMapAndNumber
-  const testMapNumber = roomData[0]["Map Number"];
-  const testRoomNumber = roomData[0]["Room Number"];
+  // Test getRoomByMapAndNumber for textblock exits
+  const testMapNumber = "1";
+  const testRoomNumber = "2149";
   const roomByMapAndNumber = roomLookup.getRoomByMapAndNumber(
     testMapNumber,
     testRoomNumber
   );
   console.log("\nTest getRoomByMapAndNumber:");
   console.log(roomByMapAndNumber);
+
+  // Test getRoomByMapAndNumber for portals
+  const darkwoodMap = "7";
+  const highDruidFirstPortal = "141";
+  const roomByMapAndNumber2 = roomLookup.getRoomByMapAndNumber(
+    darkwoodMap,
+    highDruidFirstPortal
+  );
+  console.log("\nTest getRoomByMapAndNumber2:");
+  console.log(roomByMapAndNumber2);
 
   // Test getRoomsByName
   const testName = roomData[0].Name;
