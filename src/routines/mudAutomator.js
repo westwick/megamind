@@ -3,6 +3,7 @@ const playerStats = require("../playerStats");
 const EventEmitter = require("events");
 const { strip, parse } = require("ansicolor");
 const RoomHandler = require("../handlers/roomHandler");
+const ConversationHandler = require("../handlers/conversationHandler");
 
 class MudAutomator {
   constructor(telnetSocket, debugCallback) {
@@ -17,6 +18,7 @@ class MudAutomator {
     this.eventBus = new EventEmitter();
     this.roomHandler = new RoomHandler(this.eventBus);
     this.gameState = new GameState(this.eventBus);
+    this.conversationHandler = new ConversationHandler(this.eventBus);
   }
 
   debug(info) {
@@ -27,6 +29,7 @@ class MudAutomator {
 
   parse(data) {
     const dataString = data.toString();
+    console.log("[MudAutomator] data received", dataString);
 
     // Store raw data
     this.rawDataBuffer.push(dataString.toString());
