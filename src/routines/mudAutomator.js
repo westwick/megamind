@@ -1,35 +1,34 @@
-const GameState = require("../gameState");
-const playerStats = require("../playerStats");
-const EventEmitter = require("events");
-const { strip, parse } = require("ansicolor");
-const RoomHandler = require("../handlers/roomHandler");
-const ConversationHandler = require("../handlers/conversationHandler");
-const RealmHandler = require("../handlers/realmHandler");
+import playerStats from "../playerStats";
+import EventEmitter from "../utils/EventEmitter";
+import { strip, parse } from "ansicolor";
+import RoomHandler from "../handlers/roomHandler";
+import ConversationHandler from "../handlers/conversationHandler";
+import RealmHandler from "../handlers/realmHandler";
 
 class MudAutomator {
-  constructor(telnetSocket, debugCallback) {
+  constructor(telnetSocket, debugCallback, gameState, playerStats) {
     console.log("MudAutomator started");
     this.telnetSocket = telnetSocket;
     this.debugCallback = debugCallback;
+    this.gameState = gameState;
+    this.playerStats = playerStats;
     this.rawDataBuffer = [];
     this.maxRawDataBufferSize = 10; // Store last 10 raw data chunks
     this.incompleteLineBuffer = "";
-    playerStats.startSession();
     this.startStatsUpdateInterval();
     this.eventBus = new EventEmitter();
     this.roomHandler = new RoomHandler(this.eventBus);
-    this.gameState = new GameState(this.eventBus);
     this.conversationHandler = new ConversationHandler(this.eventBus);
     this.realmHandler = new RealmHandler(this.eventBus);
   }
 
-  debug(info) {
+  debug = (info) => {
     if (this.debugCallback) {
       this.debugCallback(info);
     }
-  }
+  };
 
-  parse(data) {
+  parse = (data) => {
     const dataString = data.toString();
     console.log("[MudAutomator] data received", dataString);
 
@@ -51,8 +50,7 @@ class MudAutomator {
       this.incompleteLineBuffer = lines.pop();
     }
 
-    const parsedSpans = [];
-    lines.map((line) => parsedSpans.push(parse(line)));
+    const parsedSpans = lines.map((line) => parse(line));
     this.processMessage(parsedSpans);
 
     // Debug information
@@ -61,35 +59,31 @@ class MudAutomator {
       incompleteLineBuffer: this.incompleteLineBuffer,
       lastProcessedLine: lines[lines.length - 1],
     });
-  }
+  };
 
-  processMessage(messages) {
-    var lines = [];
-    for (let msg of messages) {
+  processMessage = (messages) => {
+    const lines = messages.flatMap((msg) => {
       if (msg && msg.spans && msg.spans.length > 0) {
-        var strippedSpans = msg.spans.map((x) => {
-          var stripped = strip(x.text);
-          return stripped; //.replace(/.\b|\b./g, "");
-        });
-
-        var line = strippedSpans.map((x) => x).join("");
-        lines.push(line);
+        const strippedSpans = msg.spans.map((x) => strip(x.text));
+        const line = strippedSpans.join("");
         this.eventBus.emit("new-message-line", {
           line: line,
           message: msg,
         });
-
         console.log("msg: " + line, msg);
+        return line;
       }
-    }
+      return [];
+    });
+
     // Process the entire message for the 'who' command output or similar
     this.eventBus.emit("new-message-batch", {
       lines: lines,
       messages: messages,
     });
-  }
+  };
 
-  handleExperienceGain(line) {
+  handleExperienceGain = (line) => {
     const match = line.match(/You gain (\d+) experience\./);
     if (match) {
       const expGained = parseInt(match[1], 10);
@@ -99,31 +93,31 @@ class MudAutomator {
       // Notify the renderer about the updated experience
       this.updatePlayerStats();
     }
-  }
+  };
 
-  updatePlayerStats() {
-    const stats = playerStats.getStats();
+  updatePlayerStats = () => {
+    const stats = this.playerStats.getStats();
     this.eventBus.emit("update-player-stats", stats);
-  }
+  };
 
-  startStatsUpdateInterval() {
+  startStatsUpdateInterval = () => {
     // Update stats every 5 seconds
     setInterval(() => {
       this.updatePlayerStats();
     }, 5000);
-  }
+  };
 
-  handleCombatState(line) {
+  handleCombatState = (line) => {
     if (line.includes("[0;33m*Combat Engaged*")) {
-      gameState.inCombat = true;
+      this.gameState.inCombat = true;
       console.log("Entered combat state");
     } else if (line.includes("[0;33m*Combat Off*")) {
-      gameState.inCombat = false;
+      this.gameState.inCombat = false;
       console.log("Exited combat state");
     }
-  }
+  };
 
-  handleEntityEnteringRoom(line) {
+  handleEntityEnteringRoom = (line) => {
     const match = line.match(/\[1;33m(.*?)\[0;32m/);
     if (match) {
       let entityName = this.stripAnsi(match[1].trim());
@@ -135,41 +129,26 @@ class MudAutomator {
       // instead of updating everything again, lets just look in the current room
       // and let the other room update handle the rest
       this.sendCommand("");
-
-      // if (!gameState.currentRoom.entities.includes(entityName)) {
-      //   gameState.currentRoom.entities.push(entityName);
-      //   console.log(`New entity entered the room: ${entityName}`);
-
-      //   // If not in combat, attempt to attack the new entity if it's not a player
-      //   if (!gameState.inCombat && !this.isPlayer(entityName)) {
-      //     this.sendCommand(`attack ${entityName}`);
-      //     console.log(`Attempting to attack: ${entityName}`);
-      //   }
-
-      //   // Notify the renderer about the updated room state
-      //   this.eventBus.emit("update-room", gameState.currentRoom);
-      // }
     }
-  }
+  };
 
-  isPlayer(entityName) {
+  isPlayer = (entityName) => {
     // Check if the entity name (or its first word) matches any online user
     const entityFirstName = entityName.split(" ")[0].toLowerCase();
-    return gameState.onlineUsers.some(
+    return this.gameState.onlineUsers.some(
       (user) =>
         user.toLowerCase() === entityFirstName ||
         user.toLowerCase().startsWith(entityFirstName)
     );
-  }
+  };
 
-  sendCommand(command) {
-    this.telnetSocket.write(Buffer.from(command + "\r", "utf8"));
-  }
+  sendCommand = (command) => {
+    this.telnetSocket.write(command + "\r");
+  };
 
-  // Add this new method to the class
-  stripAnsi(str) {
+  stripAnsi = (str) => {
     return str.replace(/\u001b\[[0-9;]*m/g, "").replace(/\.$/, "");
-  }
+  };
 }
 
-module.exports = MudAutomator;
+export default MudAutomator;

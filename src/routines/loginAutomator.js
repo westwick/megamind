@@ -1,24 +1,16 @@
-const gameState = require("../gameState");
+import gameState from "../gameState";
 
 class LoginAutomator {
   constructor(telnetSocket, onLoginComplete, username, password) {
     this.telnetSocket = telnetSocket;
     this.onLoginComplete = onLoginComplete;
-    this.loginInfo = {
-      username: username,
-      password: password,
-    };
+    this.loginInfo = { username, password };
   }
 
-  parse(data) {
+  parse = (data) => {
     const text = data.toString();
     const lines = text.split("\n");
     const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
-    /*
-    const hexEscapedData = text.replace(/[\x00-\x1F\x7F-\x9F]/g, (char) => {
-      return `\\x${char.charCodeAt(0).toString(16).padStart(2, "0")}`;
-    });
-    console.log("fulltext:\n\n", hexEscapedData);*/
 
     if (!gameState.isLoggedIn) {
       this.handleLogin(lastLine);
@@ -33,18 +25,18 @@ class LoginAutomator {
     }
 
     // Scan all lines for specific content
-    for (let line of lines) {
+    lines.forEach((line) => {
       const cleanLine = this.stripAnsi(line).trim();
       this.scanForSpecificContent(cleanLine);
-    }
+    });
 
     // Check if login automation is complete
     if (gameState.isLoggedIn && gameState.hasEnteredGame) {
       this.onLoginComplete(this.telnetSocket);
     }
-  }
+  };
 
-  handleLogin(lastLine) {
+  handleLogin = (lastLine) => {
     if (lastLine.includes('Otherwise type "new":')) {
       this.sendCommand(this.loginInfo.username);
     }
@@ -53,16 +45,16 @@ class LoginAutomator {
       this.sendCommand(this.loginInfo.password);
       gameState.isLoggedIn = true;
     }
-  }
+  };
 
-  handleGameEntry(lastLine) {
+  handleGameEntry = (lastLine) => {
     if (lastLine.includes("[MAJORMUD]:")) {
       this.sendCommand("enter");
       gameState.hasEnteredGame = true;
     }
-  }
+  };
 
-  scanForSpecificContent(line) {
+  scanForSpecificContent = (line) => {
     if (
       line.includes("Make your selection") &&
       !gameState.hasSentCustomCommand
@@ -70,15 +62,13 @@ class LoginAutomator {
       this.sendCommand("/go majormud");
       gameState.hasSentCustomCommand = true;
     }
-  }
+  };
 
-  stripAnsi(str) {
-    return str.replace(/\x1B\[[0-9;]*[JKmsu]/g, "");
-  }
+  stripAnsi = (str) => str.replace(/\x1B\[[0-9;]*[JKmsu]/g, "");
 
-  sendCommand(command) {
-    this.telnetSocket.write(Buffer.from(command + "\r", "utf8"));
-  }
+  sendCommand = (command) => {
+    this.telnetSocket.write(command + "\r");
+  };
 }
 
-module.exports = LoginAutomator;
+export default LoginAutomator;

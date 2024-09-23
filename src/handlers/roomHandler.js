@@ -46,31 +46,7 @@ class RoomHandler {
     });
   }
 
-  /*
-  {
-    "spans": [
-        {
-            "code": {
-                "str": "",
-                "isBrightness": false
-            },
-            "text": "Obvious exits: nF\borth, wU\best",
-            "css": "color:rgba(0,204,0,1);",
-            "color": {
-                "name": "green",
-                "bright": false,
-                "dim": false
-            },
-            "bold": false,
-            "inverse": false,
-            "italic": false,
-            "underline": false,
-            "bright": false,
-            "dim": false
-        }
-    ]
-} */
-  updateRoomExits(message) {
+  updateRoomExits = (message) => {
     if (
       message.spans &&
       message.spans.length == 1 &&
@@ -88,50 +64,9 @@ class RoomHandler {
         this.eventBus.emit("new-room-exits", exits);
       }
     }
-  }
+  };
 
-  /*
-   "spans": [
-          {
-            "code": {
-              "value": 1,
-              "type": "style",
-              "subtype": "bright",
-              "str": "\u001b[1m",
-              "isBrightness": true
-            },
-            "text": "\u001b[79D\u001b[K",
-            "css": "",
-            "bold": false,
-            "inverse": false,
-            "italic": false,
-            "underline": false,
-            "bright": false,
-            "dim": false
-          },
-          {
-            "code": {
-              "str": "",
-              "isBrightness": false
-            },
-            "text": "Darkwood Forest, Webbed Clearing\r",
-            "css": "font-weight: bold;color:rgba(0,204,255,1);",
-            "color": {
-              "name": "cyan",
-              "bright": true,
-              "dim": false
-            },
-            "bold": true,
-            "inverse": false,
-            "italic": false,
-            "underline": false,
-            "bright": false,
-            "dim": false
-          }
-        ]
-      },
-  */
-  updateRoomName(message) {
+  updateRoomName = (message) => {
     // Update room name
     if (
       message.spans &&
@@ -144,32 +79,9 @@ class RoomHandler {
 
       this.eventBus.emit("new-room-name", message.spans[1].text);
     }
-  }
+  };
 
-  /* {
-    "spans": [
-        {
-            "code": {
-                "str": "",
-                "isBrightness": false
-            },
-            "text": "You notice black star key here.",
-            "css": "color:rgba(0,153,255,1);",
-            "color": {
-                "name": "cyan",
-                "bright": false,
-                "dim": false
-            },
-            "bold": false,
-            "inverse": false,
-            "italic": false,
-            "underline": false,
-            "bright": false,
-            "dim": false
-        }
-    ]
-}*/
-  updateRoomItems(event) {
+  updateRoomItems = (event) => {
     const message = event.message;
     if (
       message.spans &&
@@ -184,77 +96,9 @@ class RoomHandler {
       console.log("[roomHandler] Items in room:", items);
       this.eventBus.emit("new-room-items", items);
     }
-  }
+  };
 
-  /* {
-    "spans": [
-        {
-            "code": {
-                "value": 1,
-                "type": "style",
-                "subtype": "bright",
-                "str": "\u001b[1m",
-                "isBrightness": true
-            },
-            "text": "Also here: ",
-            "css": "color:rgba(204,0,204,1);",
-            "color": {
-                "name": "magenta",
-                "bright": false,
-                "dim": false
-            },
-            "bold": false,
-            "inverse": false,
-            "italic": false,
-            "underline": false,
-            "bright": false,
-            "dim": false
-        },
-        {
-            "code": {
-                "value": 0,
-                "type": "style",
-                "subtype": "",
-                "str": "\u001b[0m",
-                "isBrightness": false
-            },
-            "text": "forest spider",
-            "css": "font-weight: bold;color:rgba(255,0,255,1);",
-            "color": {
-                "name": "magenta",
-                "bright": true,
-                "dim": false
-            },
-            "bold": true,
-            "inverse": false,
-            "italic": false,
-            "underline": false,
-            "bright": false,
-            "dim": false
-        },
-        {
-            "code": {
-                "str": "",
-                "isBrightness": false
-            },
-            "text": ".",
-            "css": "color:rgba(204,0,204,1);",
-            "color": {
-                "name": "magenta",
-                "bright": false,
-                "dim": false
-            },
-            "bold": false,
-            "inverse": false,
-            "italic": false,
-            "underline": false,
-            "bright": false,
-            "dim": false
-        }
-    ]
-}
-    */
-  updateRoomEntities(event) {
+  updateRoomEntities = (event) => {
     if (
       event.message.spans &&
       event.message.spans[0].color &&
@@ -271,18 +115,7 @@ class RoomHandler {
       console.log("[roomHandler] Entities in room:", entities);
       this.eventBus.emit("new-room-entities", entities);
     }
-  }
-  /* TODO: find a new home for this, prob a gameState event subscription
-    
-          // Attempt to attack the first non-player entity if not already in combat
-          if (entities.length > 0 && !gameState.inCombat) {
-            const targetEntity = entities.find((entity) => !this.isPlayer(entity));
-            if (targetEntity) {
-              this.sendCommand(`attack ${targetEntity}`);
-              console.log(`Attempting to attack: ${targetEntity}`);
-            }
-          }
-        } */
+  };
 }
 
-module.exports = RoomHandler;
+export default RoomHandler;

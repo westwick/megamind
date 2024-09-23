@@ -1,19 +1,39 @@
 {
-  "name": "megamind",
+  "name": "megamind-vue",
+  "productName": "megamind-vue",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "My Electron application description",
+  "main": ".vite/build/main.js",
   "scripts": {
-    "start": "electron src/",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\""
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.5.0",
+    "@electron-forge/maker-deb": "^7.5.0",
+    "@electron-forge/maker-rpm": "^7.5.0",
+    "@electron-forge/maker-squirrel": "^7.5.0",
+    "@electron-forge/maker-zip": "^7.5.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.5.0",
+    "@electron-forge/plugin-fuses": "^7.5.0",
+    "@electron-forge/plugin-vite": "^7.5.0",
+    "@electron/fuses": "^1.8.0",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "electron": "32.1.2",
+    "vite": "^5.4.7"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "electron": "^32.1.1"
+  "author": {
+    "name": "Andrew Westwick",
+    "email": "awestwick@gmail.com"
   },
+  "license": "MIT",
   "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "vue": "^3.5.8",
     "ansicolor": "^2.0.3",
     "telnet-client": "^2.2.1",
     "telnet-stream": "^1.1.0",

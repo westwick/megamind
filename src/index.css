@@ -1,0 +1,23 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+#terminal {
+  height: 500px;
+  width: 700px;
+  border: 1px solid lightblue;
+}
+
+#debugger {
+  flex: 1;
+  padding: 10px;
+  background: #1a1a1a;
+  color: #00ff00;
+  font-family: monospace;
+  overflow: auto;
+  max-height: 100vh;
+}
