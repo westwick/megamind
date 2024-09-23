@@ -1,12 +1,11 @@
 import playerStats from "../playerStats";
-import EventEmitter from "../utils/EventEmitter";
 import { strip, parse } from "ansicolor";
 import RoomHandler from "../handlers/roomHandler";
 import ConversationHandler from "../handlers/conversationHandler";
 import RealmHandler from "../handlers/realmHandler";
 
 class MudAutomator {
-  constructor(telnetSocket, debugCallback, gameState, playerStats) {
+  constructor(telnetSocket, debugCallback, gameState, playerStats, eventBus) {
     console.log("MudAutomator started");
     this.telnetSocket = telnetSocket;
     this.debugCallback = debugCallback;
@@ -16,7 +15,7 @@ class MudAutomator {
     this.maxRawDataBufferSize = 10; // Store last 10 raw data chunks
     this.incompleteLineBuffer = "";
     this.startStatsUpdateInterval();
-    this.eventBus = new EventEmitter();
+    this.eventBus = eventBus;
     this.roomHandler = new RoomHandler(this.eventBus);
     this.conversationHandler = new ConversationHandler(this.eventBus);
     this.realmHandler = new RealmHandler(this.eventBus);

@@ -37,14 +37,16 @@ import LoginAutomator from "./routines/loginAutomator";
 import MudAutomator from "./routines/mudAutomator";
 import GameState from "./gameState";
 import playerStats from "./playerStats";
+import EventEmitter from "./utils/EventEmitter";
 
 createApp(App).mount("#app");
 
+let config;
 let currentRoutine = null;
 let debuggerElementRef = null;
 let gameState;
 let playerStatsInstance;
-let config = null;
+let eventBus;
 
 function initTerminal() {
   // Create a new xterm.js terminal
@@ -114,8 +116,9 @@ function updateDebugger(info) {
   }
 
   const debugInfo = {
-    mudAutomator: info,
-    gameState: gameState,
+    // mudAutomator: info,
+    room: gameState.currentRoom,
+    onlineUsers: gameState.onlineUsers,
     playerStats: playerStatsInstance.getStats(),
   };
 
@@ -154,12 +157,14 @@ function onLoginComplete() {
     },
     updateDebugger,
     gameState,
-    playerStatsInstance
+    playerStatsInstance,
+    eventBus
   );
 }
 
 function initializeGame() {
-  gameState = new GameState();
+  eventBus = new EventEmitter();
+  gameState = new GameState(eventBus);
   playerStatsInstance = playerStats;
   playerStatsInstance.startSession();
 }
