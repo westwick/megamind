@@ -258,7 +258,8 @@ class RoomHandler {
     if (
       event.message.spans &&
       event.message.spans[0].color &&
-      event.message.spans[0].color.name == "magenta"
+      event.message.spans[0].color.name == "magenta" &&
+      event.line.startsWith("Also here:")
     ) {
       const entitiesPart = event.line.split("Also here:")[1].trim();
 
