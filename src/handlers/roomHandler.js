@@ -111,7 +111,11 @@ class RoomHandler {
         .split(",")
         .filter((entity) => entity !== "");
 
-      // TODO - fix trailing period in entities
+      // delete the trailing period from the last entity
+      entities[entities.length - 1] = entities[entities.length - 1].replace(
+        ".",
+        ""
+      );
       console.log("[roomHandler] Entities in room:", entities);
       this.eventBus.emit("new-room-entities", entities);
     }
