@@ -4,6 +4,7 @@ const EventEmitter = require("events");
 const { strip, parse } = require("ansicolor");
 const RoomHandler = require("../handlers/roomHandler");
 const ConversationHandler = require("../handlers/conversationHandler");
+const RealmHandler = require("../handlers/realmHandler");
 
 class MudAutomator {
   constructor(telnetSocket, debugCallback) {
@@ -19,6 +20,7 @@ class MudAutomator {
     this.roomHandler = new RoomHandler(this.eventBus);
     this.gameState = new GameState(this.eventBus);
     this.conversationHandler = new ConversationHandler(this.eventBus);
+    this.realmHandler = new RealmHandler(this.eventBus);
   }
 
   debug(info) {
@@ -167,30 +169,6 @@ class MudAutomator {
   // Add this new method to the class
   stripAnsi(str) {
     return str.replace(/\u001b\[[0-9;]*m/g, "").replace(/\.$/, "");
-  }
-
-  handleWhoCommand(message) {
-    if (
-      message.includes(
-        "[1;30m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
-      )
-    ) {
-      const lines = message.split("\n");
-      const userLines = lines.slice(1, -1); // Remove the first and last lines (separators)
-
-      const onlineUsers = userLines
-        .map((line) => {
-          const match = line.match(/\[32m([^\s]+)/);
-          return match ? match[1] : null;
-        })
-        .filter(Boolean); // Remove any null values
-
-      gameState.updateOnlineUsers(onlineUsers);
-      console.log("Updated online users:", onlineUsers);
-
-      // Notify the event bus about the updated online users
-      this.eventBus.emit("update-online-users", onlineUsers);
-    }
   }
 }
 

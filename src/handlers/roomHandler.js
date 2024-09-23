@@ -28,6 +28,8 @@ class RoomHandler {
         console.log("[roomHandler] new room", roomEvent);
         this.eventBus.emit("new-room", roomEvent);
         this.potentialRoomName = null;
+        this.potentialRoomItems = null;
+        this.potentialRoomEntities = null;
       }
     });
 
@@ -256,7 +258,8 @@ class RoomHandler {
     if (
       event.message.spans &&
       event.message.spans[0].color &&
-      event.message.spans[0].color.name == "magenta"
+      event.message.spans[0].color.name == "magenta" &&
+      event.line.startsWith("Also here:")
     ) {
       const entitiesPart = event.line.split("Also here:")[1].trim();
 
