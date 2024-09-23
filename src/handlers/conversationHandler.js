@@ -44,9 +44,6 @@ class ConversationHandler {
               sender,
               message: fullMessage,
             });
-            console.log(
-              `[conversationHandler] ${sender} telepaths: ${fullMessage}`
-            );
             return; // Exit after finding a match
           }
         }
@@ -80,9 +77,6 @@ class ConversationHandler {
             sender: username,
             message: message,
           });
-          console.log(
-            `[conversationHandler] Broadcast from ${username}: ${message}`
-          );
         }
       }
     }
@@ -105,25 +99,18 @@ class ConversationHandler {
 
       if (relevantSpans.length >= 2) {
         const cleanMessage = event.line.split("]:").pop().trim();
-        const [senderPart, messagePart] = cleanMessage.split(
-          /\s+(gossips|auctions):\s+/
+        const match = cleanMessage.match(
+          /^(\w+)\s+(gossips|auctions):\s+(.+)$/
         );
 
-        if (senderPart && messagePart) {
-          const username = senderPart.trim();
-          const message = messagePart.trim();
-          const type = cleanMessage.includes("gossips:") ? "gossip" : "auction";
+        if (match) {
+          const [, username, type, message] = match;
 
           this.eventBus.emit("conversation", {
-            type: type,
+            type: type === "gossips" ? "gossip" : "auction",
             sender: username,
-            message: message,
+            message: message.trim(),
           });
-          console.log(
-            `[conversationHandler] ${
-              type.charAt(0).toUpperCase() + type.slice(1)
-            } from ${username}: ${message}`
-          );
         }
       }
     }
@@ -157,9 +144,6 @@ class ConversationHandler {
             sender: username,
             message: message,
           });
-          console.log(
-            `[conversationHandler] Gangpath from ${username}: ${message}`
-          );
         }
       }
     }
@@ -194,9 +178,6 @@ class ConversationHandler {
             module: module,
             message: message,
           });
-          console.log(
-            `[conversationHandler] ${username} paged from ${module}: ${message}`
-          );
         }
       }
     }

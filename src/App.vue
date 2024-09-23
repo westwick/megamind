@@ -1,7 +1,9 @@
 <template>
-  <p>hi</p>
+  <div class="text-white">
+    <ConversationsComponent />
+  </div>
 </template>
 
 <script setup>
-console.log('👋 This message is being logged by "App.vue", included via Vite');
+import ConversationsComponent from './components/ConversationsComponent.vue';
 </script>

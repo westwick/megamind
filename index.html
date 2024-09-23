@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <title>Megamind for MajorMUD</title>
     <link rel="stylesheet" href="../node_modules/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="../node_modules/tailwindcss/tailwind.css" />
   </head>
   <body>
-    <div id="app"></div>
-    <div id="terminal"></div>
+    <div class="flex">
+      <div id="terminal"></div>
+      <div id="app"></div>
+    </div>
+
     <div id="debugger"></div>
     <script type="module" src="/src/renderer.js"></script>
   </body>

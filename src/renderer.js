@@ -30,6 +30,7 @@ import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { WebLinksAddon } from "xterm-addon-web-links";
 import { createApp } from "vue";
+
 import App from "./App.vue";
 import "./index.css";
 
@@ -37,16 +38,19 @@ import LoginAutomator from "./routines/loginAutomator";
 import MudAutomator from "./routines/mudAutomator";
 import GameState from "./gameState";
 import playerStats from "./playerStats";
-import EventEmitter from "./utils/EventEmitter";
 
-createApp(App).mount("#app");
+import EventEmitter from "./utils/EventEmitter";
+const eventBus = new EventEmitter();
+
+const app = createApp(App);
+app.config.globalProperties.$eventBus = eventBus;
+app.mount("#app");
 
 let config;
 let currentRoutine = null;
 let debuggerElementRef = null;
 let gameState;
 let playerStatsInstance;
-let eventBus;
 
 function initTerminal() {
   // Create a new xterm.js terminal
@@ -163,7 +167,6 @@ function onLoginComplete() {
 }
 
 function initializeGame() {
-  eventBus = new EventEmitter();
   gameState = new GameState(eventBus);
   playerStatsInstance = playerStats;
   playerStatsInstance.startSession();
