@@ -89,7 +89,6 @@ class ConversationHandler {
   };
 
   checkForGossipsAndAuctions = (event) => {
-    console.log("[conversationHandler] checkForGossips", JSON.stringify(event));
     if (
       event.message &&
       event.message.spans &&
@@ -131,10 +130,6 @@ class ConversationHandler {
   };
 
   checkForGangpath = (event) => {
-    console.log(
-      "[conversationHandler] checkForGangpath",
-      JSON.stringify(event)
-    );
     if (
       event.message &&
       event.message.spans &&

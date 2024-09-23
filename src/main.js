@@ -63,7 +63,6 @@ app.on("window-all-closed", () => {
 function loadConfig() {
   try {
     const configPath = path.join(app.getAppPath(), "config.json");
-    console.log("Config path:", configPath);
     const configData = fs.readFileSync(configPath, "utf8");
     return JSON.parse(configData);
   } catch (error) {
