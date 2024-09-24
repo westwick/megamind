@@ -58,7 +58,7 @@ function initTerminal() {
   // Create a new xterm.js terminal
   const term = new Terminal({
     cols: 80,
-    rows: 24,
+    rows: 40,
     convertEol: true,
     cursorBlink: true,
     fontFamily: "perfect_dos_vga_437regular",
@@ -67,6 +67,7 @@ function initTerminal() {
     theme: {
       background: "#000000",
       foreground: "#ffffff",
+      black: "#000000",
     },
     scrollback: 1000,
   });
