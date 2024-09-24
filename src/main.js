@@ -143,6 +143,7 @@ ipcMain.on("send-data", (event, data) => {
 });
 
 function initializeGame() {
+  currentRoutine = null;
   config = loadConfig();
   gameState = new GameState(eventBus);
   playerStatsInstance = new PlayerStats(eventBus);
