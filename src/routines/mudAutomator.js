@@ -28,7 +28,7 @@ export class MudAutomator {
   };
 
   parse = (data) => {
-    const dataString = data.dataString;
+    const dataString = data.dataTransformed;
 
     // Store raw data
     this.rawDataBuffer.push(dataString.toString());

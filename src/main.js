@@ -106,7 +106,7 @@ ipcMain.on("connect-to-server", (event) => {
       dataRaw: data,
       dataTransformed: transformedData,
       dataString: strip(transformedData),
-      dataColors: parse(transformedData),
+      dataColors: parse(transformedData).spans,
     };
     event.reply("server-data", dataEvent);
 

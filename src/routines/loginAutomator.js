@@ -8,7 +8,6 @@ export class LoginAutomator {
 
   parse = (data) => {
     const text = data.dataTransformed;
-    //console.log(text);
     const lines = text.split("\n");
     const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
 
@@ -68,7 +67,6 @@ export class LoginAutomator {
   stripAnsi = (str) => str.replace(/\x1B\[[0-9;]*[JKmsu]/g, "");
 
   sendCommand = (command) => {
-    console.log("sendCommand", command);
     this.telnetSocket.write(command + "\r");
   };
 }
