@@ -23,7 +23,13 @@ const conversations = ref([]);
 const { proxy } = getCurrentInstance();
 
 onMounted(() => {
-  proxy.$eventBus.on("conversation", handleNewConversation);
+  // TODO: wire up to electronAPI
+  //proxy.$eventBus.on('conversation', handleNewConversation);
+});
+
+onUnmounted(() => {
+  // TODO: wire up to electronAPI
+  //proxy.$eventBus.off('conversation', handleNewConversation);
 });
 
 function handleNewConversation(conversation) {

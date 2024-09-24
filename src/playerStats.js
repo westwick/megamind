@@ -1,4 +1,4 @@
-class PlayerStats {
+export class PlayerStats {
   constructor() {
     this.experienceGained = 0;
     this.sessionStartTime = null;

@@ -1,4 +1,4 @@
-class GameState {
+export class GameState {
   constructor(eventBus) {
     this.eventBus = eventBus;
     this.isLoggedIn = false;
