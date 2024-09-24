@@ -72,9 +72,10 @@ function initTerminal() {
   });
 
   // Create and load addons
-  const fitAddon = new FitAddon();
-  const webLinksAddon = new WebLinksAddon();
-  const webGlAddon = new WebglAddon();
+  // *disabled for now, re-visit later*
+  // const fitAddon = new FitAddon();
+  // const webLinksAddon = new WebLinksAddon();
+  // const webGlAddon = new WebglAddon();
   // term.loadAddon(fitAddon);
   // term.loadAddon(webLinksAddon);
   // term.loadAddon(webGlAddon);
@@ -85,7 +86,7 @@ function initTerminal() {
 
   term.open(terminalElement);
   term.write("\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\r\n\x1b[0m");
-  fitAddon.fit();
+  // fitAddon.fit();
 
   window.electronAPI.onServerConnected(() => {
     term.write("\x1b[44m\x1b[37m*** Connected to Server ***\r\n\x1b[0m");
