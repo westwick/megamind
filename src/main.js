@@ -93,10 +93,11 @@ let gameState;
 let playerStatsInstance;
 let eventBus = new EventEmitter();
 
-ipcMain.on("connect-to-server", (event, { host, port }) => {
+ipcMain.on("connect-to-server", (event) => {
   initializeGame();
 
   currentRoutine = new LoginAutomator(
+    gameState,
     {
       write: (data) => mainWindow.webContents.send("send-data", data),
     },
@@ -105,7 +106,7 @@ ipcMain.on("connect-to-server", (event, { host, port }) => {
     config.password
   );
 
-  socket = net.createConnection(port, host, () => {
+  socket = net.createConnection(config.port, config.server, () => {
     event.reply("server-connected");
   });
 
@@ -132,6 +133,7 @@ ipcMain.on("connect-to-server", (event, { host, port }) => {
   });
 
   socket.on("error", (err) => {
+    console.error("Socket error: ", err);
     event.reply("server-error", err.message);
   });
 });
@@ -143,6 +145,7 @@ ipcMain.on("send-data", (event, data) => {
 });
 
 function initializeGame() {
+  config = loadConfig();
   gameState = new GameState(eventBus);
   playerStatsInstance = new PlayerStats(eventBus);
   playerStatsInstance.startSession();

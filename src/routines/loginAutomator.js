@@ -1,7 +1,6 @@
-import gameState from "../gameState";
-
 export class LoginAutomator {
-  constructor(telnetSocket, onLoginComplete, username, password) {
+  constructor(gameState, telnetSocket, onLoginComplete, username, password) {
+    this.gameState = gameState;
     this.telnetSocket = telnetSocket;
     this.onLoginComplete = onLoginComplete;
     this.loginInfo = { username, password };
@@ -9,15 +8,15 @@ export class LoginAutomator {
 
   parse = (data) => {
     const text = data.dataTransformed;
-    console.log(text);
+    //console.log(text);
     const lines = text.split("\n");
     const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
 
-    if (!gameState.isLoggedIn) {
+    if (!this.gameState.isLoggedIn) {
       this.handleLogin(lastLine);
     }
 
-    if (gameState.isLoggedIn && !gameState.hasEnteredGame) {
+    if (this.gameState.isLoggedIn && !this.gameState.hasEnteredGame) {
       this.handleGameEntry(lastLine);
     }
 
@@ -32,7 +31,7 @@ export class LoginAutomator {
     });
 
     // Check if login automation is complete
-    if (gameState.isLoggedIn && gameState.hasEnteredGame) {
+    if (this.gameState.isLoggedIn && this.gameState.hasEnteredGame) {
       this.onLoginComplete(this.telnetSocket);
     }
   };
@@ -44,24 +43,24 @@ export class LoginAutomator {
 
     if (lastLine.includes("Enter your password:")) {
       this.sendCommand(this.loginInfo.password);
-      gameState.isLoggedIn = true;
+      this.gameState.isLoggedIn = true;
     }
   };
 
   handleGameEntry = (lastLine) => {
     if (lastLine.includes("[MAJORMUD]:")) {
       this.sendCommand("enter");
-      gameState.hasEnteredGame = true;
+      this.gameState.hasEnteredGame = true;
     }
   };
 
   scanForSpecificContent = (line) => {
     if (
       line.includes("Make your selection") &&
-      !gameState.hasSentCustomCommand
+      !this.gameState.hasSentCustomCommand
     ) {
       this.sendCommand("/go majormud");
-      gameState.hasSentCustomCommand = true;
+      this.gameState.hasSentCustomCommand = true;
     }
   };
 

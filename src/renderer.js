@@ -131,13 +131,11 @@ function updateDebugger(info) {
   )}</pre>`;
 }
 
-async function startLoginRoutine() {
-  config = await window.electronAPI.loadConfig();
-  const term = initTerminal();
-  window.electronAPI.connectToServer({
-    host: config.server,
-    port: config.port,
-  });
+function startLoginRoutine() {
+  initTerminal();
+  window.electronAPI.connectToServer();
 }
 
-startLoginRoutine();
+setTimeout(() => {
+  startLoginRoutine();
+}, 100);
