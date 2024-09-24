@@ -3,15 +3,24 @@ const fs = require("fs");
 const path = require("node:path");
 const net = require("net");
 const iconv = require("iconv-lite");
+import { strip, parse } from "ansicolor";
+import { MudAutomator } from "./routines/mudAutomator.js";
+import { LoginAutomator } from "./routines/loginAutomator.js";
+import { GameState } from "./gameState.js";
+import { PlayerStats } from "./playerStats.js";
+import { EventEmitter } from "events";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
   app.quit();
 }
+import sourceMapSupport from "source-map-support";
+sourceMapSupport.install();
 
+let mainWindow;
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
@@ -60,12 +69,15 @@ app.on("window-all-closed", () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-
+let config = null;
 function loadConfig() {
   try {
-    const configPath = path.join(app.getAppPath(), "config.json");
-    const configData = fs.readFileSync(configPath, "utf8");
-    return JSON.parse(configData);
+    if (!config) {
+      const configPath = path.join(app.getAppPath(), "config.json");
+      const configData = fs.readFileSync(configPath, "utf8");
+      config = JSON.parse(configData);
+    }
+    return config;
   } catch (error) {
     console.error("Error loading config:", error);
   }
@@ -76,19 +88,43 @@ ipcMain.handle("load-config", () => {
 });
 
 let socket;
+let currentRoutine = null;
+let gameState;
+let playerStatsInstance;
+let eventBus = new EventEmitter();
 
 ipcMain.on("connect-to-server", (event, { host, port }) => {
+  initializeGame();
+
+  currentRoutine = new LoginAutomator(
+    {
+      write: (data) => mainWindow.webContents.send("send-data", data),
+    },
+    onLoginComplete,
+    config.username,
+    config.password
+  );
+
   socket = net.createConnection(port, host, () => {
     event.reply("server-connected");
   });
 
   socket.on("data", (data) => {
     const transformedData = iconv.decode(data, "cp437");
-    event.reply("server-data", {
+    const dataEvent = {
       dataRaw: data,
       dataTransformed: transformedData,
-      dataString: data.toString(),
-    });
+      dataString: strip(transformedData),
+      dataColors: parse(transformedData),
+    };
+    event.reply("server-data", dataEvent);
+
+    if (currentRoutine) {
+      currentRoutine.parse(dataEvent);
+      if (currentRoutine instanceof MudAutomator) {
+        // window.electronAPI.updateRoom(gameState.currentRoom);
+      }
+    }
   });
 
   socket.on("close", () => {
@@ -105,3 +141,23 @@ ipcMain.on("send-data", (event, data) => {
     socket.write(data);
   }
 });
+
+function initializeGame() {
+  gameState = new GameState(eventBus);
+  playerStatsInstance = new PlayerStats(eventBus);
+  playerStatsInstance.startSession();
+}
+
+function onLoginComplete() {
+  console.log("Login automation complete");
+
+  currentRoutine = new MudAutomator(
+    {
+      write: (data) => mainWindow.webContents.send("send-data", data),
+    },
+    updateDebugger,
+    gameState,
+    playerStatsInstance,
+    eventBus
+  );
+}
