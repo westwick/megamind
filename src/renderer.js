@@ -33,6 +33,7 @@ import { createApp } from "vue";
 
 import App from "./App.vue";
 import "./index.css";
+import "./assets/css/fonts.css";
 
 import LoginAutomator from "./routines/loginAutomator";
 import MudAutomator from "./routines/mudAutomator";
@@ -52,6 +53,55 @@ let debuggerElementRef = null;
 let gameState;
 let playerStatsInstance;
 
+eventBus.on("font-changed", (newFont) => {
+  console.log(`[renderer] Font changed to ${newFont}`);
+  updateTerminalFont(newFont);
+});
+
+eventBus.on("font-size-changed", (newSize) => {
+  console.log(`[renderer] Font size changed to ${newSize}px`);
+  updateTerminalFontSize(newSize);
+});
+
+const updateTerminalFont = (newFont) => {
+  // Inject a new style element with high specificity
+  const styleId = "custom-xterm-style";
+  let styleElement = document.getElementById(styleId);
+
+  if (!styleElement) {
+    styleElement = document.createElement("style");
+    styleElement.id = styleId;
+    document.head.appendChild(styleElement);
+  }
+
+  styleElement.textContent = `
+      .xterm-dom-renderer-owner-1 .xterm-rows {
+        font-family: "${newFont}" !important;
+      }
+    `;
+
+  console.log(`Injected CSS for font: ${newFont}`);
+};
+
+const updateTerminalFontSize = (newSize) => {
+  const styleId = "custom-xterm-style";
+  let styleElement = document.getElementById(styleId);
+
+  if (!styleElement) {
+    styleElement = document.createElement("style");
+    styleElement.id = styleId;
+    document.head.appendChild(styleElement);
+  }
+
+  styleElement.textContent += `
+    .xterm-dom-renderer-owner-1 .xterm-rows {
+      font-size: ${newSize}px !important;
+    }
+  `;
+
+  console.log(`Injected CSS for font size: ${newSize}px`);
+};
+
 function initTerminal() {
   // Create a new xterm.js terminal
   const term = new Terminal({
@@ -59,8 +109,7 @@ function initTerminal() {
     rows: 24,
     convertEol: true,
     cursorBlink: true,
-    fontSize: 14,
-    fontFamily: "monospace",
+    fontSize: 16, // Set default font size
     theme: {
       background: "#000000",
       foreground: "#ffffff",
@@ -86,10 +135,12 @@ function initTerminal() {
     term.write("\x1b[44m\x1b[37m*** Connected to Server ***\r\n\x1b[0m");
   });
 
-  window.electronAPI.onServerData((data) => {
-    term.write(data);
+  window.electronAPI.onServerData((event) => {
+    console.log(event);
+    term.write(event.dataTransformed);
+
     if (currentRoutine) {
-      currentRoutine.parse(data);
+      currentRoutine.parse(event.dataString);
       if (currentRoutine instanceof MudAutomator) {
         // window.electronAPI.updateRoom(gameState.currentRoom);
       }

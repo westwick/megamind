@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("node:path");
 const net = require("net");
+const iconv = require("iconv-lite");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -82,7 +83,12 @@ ipcMain.on("connect-to-server", (event, { host, port }) => {
   });
 
   socket.on("data", (data) => {
-    event.reply("server-data", data.toString());
+    const transformedData = iconv.decode(data, "cp437");
+    event.reply("server-data", {
+      dataRaw: data,
+      dataTransformed: transformedData,
+      dataString: data.toString(),
+    });
   });
 
   socket.on("close", () => {
