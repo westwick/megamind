@@ -36,23 +36,13 @@ import App from "./App.vue";
 import "./index.css";
 import "./assets/css/fonts.css";
 
-import LoginAutomator from "./routines/loginAutomator";
-import MudAutomator from "./routines/mudAutomator";
-import GameState from "./gameState";
-import playerStats from "./playerStats";
-
-import EventEmitter from "./utils/EventEmitter";
-const eventBus = new EventEmitter();
-
 const app = createApp(App);
-app.config.globalProperties.$eventBus = eventBus;
+
+app.config.globalProperties.$eventBus = window.electronAPI;
 app.mount("#app");
 
 let config;
-let currentRoutine = null;
 let debuggerElementRef = null;
-let gameState;
-let playerStatsInstance;
 
 function initTerminal() {
   // Create a new xterm.js terminal
@@ -100,13 +90,6 @@ function initTerminal() {
   window.electronAPI.onServerData((event) => {
     console.log(event);
     term.write(event.dataTransformed);
-
-    if (currentRoutine) {
-      currentRoutine.parse(event.dataString);
-      if (currentRoutine instanceof MudAutomator) {
-        // window.electronAPI.updateRoom(gameState.currentRoom);
-      }
-    }
   });
 
   window.electronAPI.onServerClosed(() => {
@@ -134,9 +117,11 @@ function updateDebugger(info) {
 
   const debugInfo = {
     // mudAutomator: info,
+    /* TODO: need to wire up gameState thru eventsAPI
     room: gameState.currentRoom,
     onlineUsers: gameState.onlineUsers,
     playerStats: playerStatsInstance.getStats(),
+    */
   };
 
   debuggerElementRef.innerHTML = `<pre>${JSON.stringify(
@@ -146,43 +131,11 @@ function updateDebugger(info) {
   )}</pre>`;
 }
 
-async function startLoginRoutine() {
-  config = await window.electronAPI.loadConfig();
-  const term = initTerminal();
-  window.electronAPI.connectToServer({
-    host: config.server,
-    port: config.port,
-  });
-  currentRoutine = new LoginAutomator(
-    {
-      write: (data) => window.electronAPI.sendData(data),
-    },
-    onLoginComplete,
-    config.username,
-    config.password
-  );
+function startLoginRoutine() {
+  initTerminal();
+  window.electronAPI.connectToServer();
 }
 
-function onLoginComplete() {
-  console.log("Login automation complete");
-
-  initializeGame();
-
-  currentRoutine = new MudAutomator(
-    {
-      write: (data) => window.electronAPI.sendData(data),
-    },
-    updateDebugger,
-    gameState,
-    playerStatsInstance,
-    eventBus
-  );
-}
-
-function initializeGame() {
-  gameState = new GameState(eventBus);
-  playerStatsInstance = playerStats;
-  playerStatsInstance.startSession();
-}
-
-startLoginRoutine();
+setTimeout(() => {
+  startLoginRoutine();
+}, 100);

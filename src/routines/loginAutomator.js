@@ -1,22 +1,21 @@
-import gameState from "../gameState";
-
-class LoginAutomator {
-  constructor(telnetSocket, onLoginComplete, username, password) {
+export class LoginAutomator {
+  constructor(gameState, telnetSocket, onLoginComplete, username, password) {
+    this.gameState = gameState;
     this.telnetSocket = telnetSocket;
     this.onLoginComplete = onLoginComplete;
     this.loginInfo = { username, password };
   }
 
   parse = (data) => {
-    const text = data.toString();
+    const text = data.dataTransformed;
     const lines = text.split("\n");
     const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
 
-    if (!gameState.isLoggedIn) {
+    if (!this.gameState.isLoggedIn) {
       this.handleLogin(lastLine);
     }
 
-    if (gameState.isLoggedIn && !gameState.hasEnteredGame) {
+    if (this.gameState.isLoggedIn && !this.gameState.hasEnteredGame) {
       this.handleGameEntry(lastLine);
     }
 
@@ -31,36 +30,37 @@ class LoginAutomator {
     });
 
     // Check if login automation is complete
-    if (gameState.isLoggedIn && gameState.hasEnteredGame) {
+    if (this.gameState.isLoggedIn && this.gameState.hasEnteredGame) {
       this.onLoginComplete(this.telnetSocket);
     }
   };
 
   handleLogin = (lastLine) => {
+    console.log("handleLogin", lastLine);
     if (lastLine.includes('Otherwise type "new":')) {
       this.sendCommand(this.loginInfo.username);
     }
 
     if (lastLine.includes("Enter your password:")) {
       this.sendCommand(this.loginInfo.password);
-      gameState.isLoggedIn = true;
+      this.gameState.isLoggedIn = true;
     }
   };
 
   handleGameEntry = (lastLine) => {
     if (lastLine.includes("[MAJORMUD]:")) {
       this.sendCommand("enter");
-      gameState.hasEnteredGame = true;
+      this.gameState.hasEnteredGame = true;
     }
   };
 
   scanForSpecificContent = (line) => {
     if (
       line.includes("Make your selection") &&
-      !gameState.hasSentCustomCommand
+      !this.gameState.hasSentCustomCommand
     ) {
       this.sendCommand("/go majormud");
-      gameState.hasSentCustomCommand = true;
+      this.gameState.hasSentCustomCommand = true;
     }
   };
 
@@ -70,5 +70,3 @@ class LoginAutomator {
     this.telnetSocket.write(command + "\r");
   };
 }
-
-export default LoginAutomator;
