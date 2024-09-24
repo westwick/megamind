@@ -29,6 +29,7 @@
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { WebLinksAddon } from "xterm-addon-web-links";
+// import { WebglAddon } from "@xterm/addon-webgl";
 import { createApp } from "vue";
 
 import App from "./App.vue";
@@ -53,55 +54,6 @@ let debuggerElementRef = null;
 let gameState;
 let playerStatsInstance;
 
-eventBus.on("font-changed", (newFont) => {
-  console.log(`[renderer] Font changed to ${newFont}`);
-  updateTerminalFont(newFont);
-});
-
-eventBus.on("font-size-changed", (newSize) => {
-  console.log(`[renderer] Font size changed to ${newSize}px`);
-  updateTerminalFontSize(newSize);
-});
-
-const updateTerminalFont = (newFont) => {
-  // Inject a new style element with high specificity
-  const styleId = "custom-xterm-style";
-  let styleElement = document.getElementById(styleId);
-
-  if (!styleElement) {
-    styleElement = document.createElement("style");
-    styleElement.id = styleId;
-    document.head.appendChild(styleElement);
-  }
-
-  styleElement.textContent = `
-      .xterm-dom-renderer-owner-1 .xterm-rows {
-        font-family: "${newFont}" !important;
-      }
-    `;
-
-  console.log(`Injected CSS for font: ${newFont}`);
-};
-
-const updateTerminalFontSize = (newSize) => {
-  const styleId = "custom-xterm-style";
-  let styleElement = document.getElementById(styleId);
-
-  if (!styleElement) {
-    styleElement = document.createElement("style");
-    styleElement.id = styleId;
-    document.head.appendChild(styleElement);
-  }
-
-  styleElement.textContent += `
-    .xterm-dom-renderer-owner-1 .xterm-rows {
-      font-size: ${newSize}px !important;
-    }
-  `;
-
-  console.log(`Injected CSS for font size: ${newSize}px`);
-};
-
 function initTerminal() {
   // Create a new xterm.js terminal
   const term = new Terminal({
@@ -109,7 +61,9 @@ function initTerminal() {
     rows: 24,
     convertEol: true,
     cursorBlink: true,
-    fontSize: 16, // Set default font size
+    fontFamily: "perfect_dos_vga_437regular",
+    fontSize: 16,
+    letterSpacing: -1,
     theme: {
       background: "#000000",
       foreground: "#ffffff",
@@ -120,8 +74,10 @@ function initTerminal() {
   // Create and load addons
   const fitAddon = new FitAddon();
   const webLinksAddon = new WebLinksAddon();
-  term.loadAddon(fitAddon);
-  term.loadAddon(webLinksAddon);
+  const webGlAddon = new WebglAddon();
+  // term.loadAddon(fitAddon);
+  // term.loadAddon(webLinksAddon);
+  // term.loadAddon(webGlAddon);
 
   // Initialize the terminal in the 'terminal' div
   const terminalElement = document.getElementById("terminal");

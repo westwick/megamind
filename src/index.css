@@ -15,6 +15,10 @@ body {
   width: 800px;
 }
 
+#terminal .xterm-bold {
+  font-weight: normal !important;
+}
+
 #debugger {
   flex: 1;
   padding: 10px;
@@ -23,4 +27,8 @@ body {
   font-family: monospace;
   overflow: auto;
   max-height: 100vh;
+}
+
+pre {
+  font-family: "perfect_dos_vga_437regular";
 }
