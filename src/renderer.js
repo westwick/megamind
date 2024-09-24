@@ -68,16 +68,20 @@ function initTerminal() {
       background: "#000000",
       foreground: "#ffffff",
       black: "#000000",
+      brightGreen: "#00ff00",
+      brightYellow: "#ffff00",
+      magenta: "#800080",
+      brightMagenta: "#ff00ff",
     },
     scrollback: 1000,
   });
 
   // Create and load addons
   // *disabled for now, re-visit later*
-  // const fitAddon = new FitAddon();
+  const fitAddon = new FitAddon();
   // const webLinksAddon = new WebLinksAddon();
   // const webGlAddon = new WebglAddon();
-  // term.loadAddon(fitAddon);
+  term.loadAddon(fitAddon);
   // term.loadAddon(webLinksAddon);
   // term.loadAddon(webGlAddon);
 

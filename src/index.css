@@ -11,7 +11,7 @@ body {
 }
 
 #terminal {
-  height: 500px;
+  height: 640px;
   width: 800px;
 }
 
@@ -20,15 +20,13 @@ body {
 }
 
 #debugger {
-  flex: 1;
-  padding: 10px;
   background: #1a1a1a;
   color: #00ff00;
-  font-family: monospace;
-  overflow: auto;
-  max-height: 100vh;
 }
 
 pre {
   font-family: "perfect_dos_vga_437regular";
+  white-space: pre-wrap;
+  overflow-y: scroll;
+  height: 400px;
 }
