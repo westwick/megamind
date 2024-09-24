@@ -4,7 +4,7 @@ import RoomHandler from "../handlers/roomHandler";
 import ConversationHandler from "../handlers/conversationHandler";
 import RealmHandler from "../handlers/realmHandler";
 
-class MudAutomator {
+export class MudAutomator {
   constructor(telnetSocket, debugCallback, gameState, playerStats, eventBus) {
     console.log("MudAutomator started");
     this.telnetSocket = telnetSocket;
@@ -28,8 +28,7 @@ class MudAutomator {
   };
 
   parse = (data) => {
-    const dataString = data.toString();
-    console.log("[MudAutomator] data received", dataString);
+    const dataString = data.dataString;
 
     // Store raw data
     this.rawDataBuffer.push(dataString.toString());
@@ -49,8 +48,7 @@ class MudAutomator {
       this.incompleteLineBuffer = lines.pop();
     }
 
-    const parsedSpans = lines.map((line) => parse(line));
-    this.processMessage(parsedSpans);
+    this.processMessage(data.dataColors);
 
     // Debug information
     this.debug({

@@ -1,6 +1,6 @@
 import gameState from "../gameState";
 
-class LoginAutomator {
+export class LoginAutomator {
   constructor(telnetSocket, onLoginComplete, username, password) {
     this.telnetSocket = telnetSocket;
     this.onLoginComplete = onLoginComplete;
@@ -8,7 +8,8 @@ class LoginAutomator {
   }
 
   parse = (data) => {
-    const text = data.toString();
+    const text = data.dataTransformed;
+    console.log(text);
     const lines = text.split("\n");
     const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
 
@@ -70,5 +71,3 @@ class LoginAutomator {
     this.telnetSocket.write(command + "\r");
   };
 }
-
-export default LoginAutomator;
