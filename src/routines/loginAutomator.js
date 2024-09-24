@@ -37,6 +37,7 @@ export class LoginAutomator {
   };
 
   handleLogin = (lastLine) => {
+    console.log("handleLogin", lastLine);
     if (lastLine.includes('Otherwise type "new":')) {
       this.sendCommand(this.loginInfo.username);
     }
@@ -67,6 +68,7 @@ export class LoginAutomator {
   stripAnsi = (str) => str.replace(/\x1B\[[0-9;]*[JKmsu]/g, "");
 
   sendCommand = (command) => {
+    console.log("sendCommand", command);
     this.telnetSocket.write(command + "\r");
   };
 }

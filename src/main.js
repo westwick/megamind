@@ -96,16 +96,6 @@ let eventBus = new EventEmitter();
 ipcMain.on("connect-to-server", (event) => {
   initializeGame();
 
-  currentRoutine = new LoginAutomator(
-    gameState,
-    {
-      write: (data) => mainWindow.webContents.send("send-data", data),
-    },
-    onLoginComplete,
-    config.username,
-    config.password
-  );
-
   socket = net.createConnection(config.port, config.server, () => {
     event.reply("server-connected");
   });
@@ -125,6 +115,14 @@ ipcMain.on("connect-to-server", (event) => {
       if (currentRoutine instanceof MudAutomator) {
         // window.electronAPI.updateRoom(gameState.currentRoom);
       }
+    } else {
+      currentRoutine = new LoginAutomator(
+        gameState,
+        socket,
+        onLoginComplete,
+        config.username,
+        config.password
+      );
     }
   });
 
@@ -155,12 +153,14 @@ function onLoginComplete() {
   console.log("Login automation complete");
 
   currentRoutine = new MudAutomator(
-    {
-      write: (data) => mainWindow.webContents.send("send-data", data),
-    },
+    socket,
     updateDebugger,
     gameState,
     playerStatsInstance,
     eventBus
   );
+}
+
+function updateDebugger(debugInfo) {
+  mainWindow.webContents.send("update-debug-info", debugInfo);
 }
