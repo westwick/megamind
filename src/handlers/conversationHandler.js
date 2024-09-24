@@ -172,10 +172,6 @@ class ConversationHandler {
   };
 
   checkForLocalMessage = (event) => {
-    console.log(
-      "[ConversationHandler] checkForLocalMessage",
-      JSON.stringify(event)
-    );
     if (event.message && event.message.spans) {
       const isDarkGreen = event.message.spans.some(
         (span) =>

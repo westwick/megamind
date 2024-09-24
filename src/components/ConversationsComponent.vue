@@ -27,7 +27,6 @@ onMounted(() => {
 });
 
 function handleNewConversation(conversation) {
-  console.log("[ConversationComponent]New conversation:", conversation);
   conversations.value.push(conversation);
 }
 
