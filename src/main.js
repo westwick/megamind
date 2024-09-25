@@ -3,7 +3,6 @@ const fs = require("fs");
 const path = require("node:path");
 const net = require("net");
 const iconv = require("iconv-lite");
-import { strip, parse } from "ansicolor";
 import { MudAutomator } from "./routines/mudAutomator.js";
 import { LoginAutomator } from "./routines/loginAutomator.js";
 import { GameState } from "./gameState.js";
@@ -105,8 +104,6 @@ ipcMain.on("connect-to-server", (event) => {
     const dataEvent = {
       dataRaw: data,
       dataTransformed: transformedData,
-      dataString: strip(transformedData),
-      dataColors: parse(transformedData).spans,
     };
     event.reply("server-data", dataEvent);
 
@@ -160,6 +157,11 @@ function onLoginComplete() {
     playerStatsInstance,
     eventBus
   );
+
+  eventBus.on("conversation", (conversation) => {
+    console.log("conversation", conversation);
+    mainWindow.webContents.send("conversation", conversation);
+  });
 }
 
 function updateDebugger(debugInfo) {

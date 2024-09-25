@@ -38,10 +38,8 @@ import "./assets/css/fonts.css";
 
 const app = createApp(App);
 
-app.config.globalProperties.$eventBus = window.electronAPI;
 app.mount("#app");
 
-let config;
 let debuggerElementRef = null;
 
 function initTerminal() {
@@ -88,7 +86,6 @@ function initTerminal() {
   });
 
   window.electronAPI.onServerData((event) => {
-    console.log(event);
     term.write(event.dataTransformed);
   });
 

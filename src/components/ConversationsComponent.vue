@@ -17,22 +17,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, getCurrentInstance } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 
 const conversations = ref([]);
-const { proxy } = getCurrentInstance();
 
 onMounted(() => {
-  // TODO: wire up to electronAPI
-  //proxy.$eventBus.on('conversation', handleNewConversation);
+  // Use window.electronAPI directly
+  console.log(window.electronAPI);
+  window.electronAPI.onConversation(handleNewConversation);
 });
 
-onUnmounted(() => {
-  // TODO: wire up to electronAPI
-  //proxy.$eventBus.off('conversation', handleNewConversation);
-});
-
-function handleNewConversation(conversation) {
+function handleNewConversation(event, conversation) {
   conversations.value.push(conversation);
 }
 

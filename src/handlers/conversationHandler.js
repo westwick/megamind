@@ -5,10 +5,12 @@ class ConversationHandler {
   }
 
   setupEventListeners = () => {
+    console.log("[conversationHandler] setupEventListeners");
     this.eventBus.on("new-message-line", this.handleMessage.bind(this));
   };
 
   handleMessage = (event) => {
+    console.log("handleMessage", event);
     this.checkForTelepath(event);
     this.checkForBroadcast(event);
     this.checkForGossipsAndAuctions(event);
@@ -19,6 +21,7 @@ class ConversationHandler {
   };
 
   emitConversationEvent(eventData) {
+    console.log("emitConversationEvent", eventData);
     this.eventBus.emit("conversation", {
       ...eventData,
       timestamp: new Date().toISOString(),

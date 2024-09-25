@@ -36,7 +36,6 @@ export class LoginAutomator {
   };
 
   handleLogin = (lastLine) => {
-    console.log("handleLogin", lastLine);
     if (lastLine.includes('Otherwise type "new":')) {
       this.sendCommand(this.loginInfo.username);
     }

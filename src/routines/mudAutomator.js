@@ -31,13 +31,13 @@ export class MudAutomator {
     const dataString = data.dataTransformed;
 
     // Store raw data
-    this.rawDataBuffer.push(dataString.toString());
+    this.rawDataBuffer.push(dataString);
     if (this.rawDataBuffer.length > this.maxRawDataBufferSize) {
       this.rawDataBuffer.shift();
     }
 
     // Prepend any incomplete line from the previous chunk
-    let fullData = this.incompleteLineBuffer + dataString.toString();
+    let fullData = this.incompleteLineBuffer + dataString;
     this.incompleteLineBuffer = "";
 
     // Split the data into lines
@@ -48,7 +48,8 @@ export class MudAutomator {
       this.incompleteLineBuffer = lines.pop();
     }
 
-    this.processMessage(data.dataColors);
+    const parsedSpans = lines.map((line) => parse(line));
+    this.processMessage(parsedSpans);
 
     // Debug information
     this.debug({
