@@ -5,8 +5,8 @@ const net = require("net");
 const iconv = require("iconv-lite");
 import { MudAutomator } from "./routines/mudAutomator.js";
 import { LoginAutomator } from "./routines/loginAutomator.js";
-import { GameState } from "./gameState.js";
-import { PlayerStats } from "./playerStats.js";
+import { GameState } from "./state/gameState.js";
+import { PlayerStats } from "./state/playerStats.js";
 import { EventEmitter } from "events";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.

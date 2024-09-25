@@ -33,7 +33,7 @@ import { WebLinksAddon } from "xterm-addon-web-links";
 import { createApp } from "vue";
 
 import App from "./App.vue";
-import "./index.css";
+import "./assets/css/index.css";
 import "./assets/css/fonts.css";
 
 const app = createApp(App);

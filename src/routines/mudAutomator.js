@@ -1,4 +1,4 @@
-import playerStats from "../playerStats";
+import playerStats from "../state/playerStats";
 import { strip, parse } from "ansicolor";
 import RoomHandler from "../handlers/roomHandler";
 import ConversationHandler from "../handlers/conversationHandler";
