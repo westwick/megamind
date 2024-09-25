@@ -2,37 +2,35 @@
   <div id="debugger" class="flex flex-row justify-between text-white">
     <div class="flex-1 p-2">
       <p class="text-center">Room Info</p>
-      <pre>{{ roomInfo }}</pre>
+      <pre>{{ roomInfoString }}</pre>
     </div>
     <div class="flex-1 p-2">
       <p class="text-center">Online Users</p>
-      <pre>{{ onlineUsers }}</pre>
+      <pre>{{ onlineUsersString }}</pre>
     </div>
     <div class="flex-1 p-2">
       <p class="text-center">Player Stats</p>
-      <pre>{{ playerStats }}</pre>
+      <pre>{{ playerStatsString }}</pre>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from "vue";
-import { mapState } from "vuex";
+import { useStore } from "vuex";
 
-const storeState = mapState({
-  roomInfo: (state) => state.game.roomInfo,
-  onlineUsers: (state) => state.game.onlineUsers,
-  playerStats: (state) => state.game.playerStats,
-});
+const store = useStore();
 
-const roomInfo = computed(() =>
-  JSON.stringify(storeState.roomInfo.value, null, 2)
+const roomInfo = computed(() => store.state.game.roomInfo);
+const onlineUsers = computed(() => store.state.game.onlineUsers);
+const playerStats = computed(() => store.state.game.playerStats);
+
+const roomInfoString = computed(() => JSON.stringify(roomInfo.value, null, 2));
+const onlineUsersString = computed(() =>
+  JSON.stringify(onlineUsers.value, null, 2)
 );
-const onlineUsers = computed(() =>
-  JSON.stringify(storeState.onlineUsers.value, null, 2)
-);
-const playerStats = computed(() =>
-  JSON.stringify(storeState.playerStats.value, null, 2)
+const playerStatsString = computed(() =>
+  JSON.stringify(playerStats.value, null, 2)
 );
 </script>
 

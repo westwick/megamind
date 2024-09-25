@@ -40,30 +40,12 @@ const app = createApp(App);
 app.use(store);
 app.mount("#app");
 
-window.electronAPI.onStateUpdate((event, { key, value }) => {
-  switch (key) {
-    case "roomData":
-      store.dispatch("game/updateGameState", {
-        type: "NEW_ROOM",
-        payload: value,
-      });
-      break;
-    case "onlineUsers":
-      store.dispatch("game/updateGameState", {
-        type: "UPDATE_ONLINE_USERS",
-        payload: value,
-      });
-      break;
-    case "playerStats":
-      store.dispatch("game/updateGameState", {
-        type: "UPDATE_PLAYER_STATS",
-        payload: value,
-      });
-      break;
-    case "conversations":
-      store.dispatch("conversations/addConversation", value);
-      break;
-  }
+window.electronAPI.onNewRoom((event, info) => {
+  console.log("onNewRoom", JSON.stringify(info, null, 2));
+  store.dispatch("game/updateGameState", {
+    type: "NEW_ROOM",
+    payload: info,
+  });
 });
 
 function initTerminal() {

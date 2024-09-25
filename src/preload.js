@@ -16,5 +16,4 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onNewRoom: (callback) => ipcRenderer.on("new-room", callback),
   onConversation: (callback) => ipcRenderer.on("conversation", callback),
   onPlayerStats: (callback) => ipcRenderer.on("update-player-stats", callback),
-  onStateUpdate: (callback) => ipcRenderer.on("state-update", callback),
 });
