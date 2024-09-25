@@ -13,10 +13,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onServerError: (callback) =>
     ipcRenderer.on("server-error", (event, error) => callback(error)),
   sendData: (data) => ipcRenderer.send("send-data", data),
-  updateRoom: (room) => ipcRenderer.send("update-room", room),
-  updateGameState: (gameState) =>
-    ipcRenderer.send("update-game-state", gameState),
-  updateDebugInfo: (debugInfo) =>
-    ipcRenderer.send("update-debug-info", debugInfo),
+  onNewRoom: (callback) => ipcRenderer.on("new-room", callback),
   onConversation: (callback) => ipcRenderer.on("conversation", callback),
+  onPlayerStats: (callback) => ipcRenderer.on("update-player-stats", callback),
 });

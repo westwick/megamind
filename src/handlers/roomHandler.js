@@ -25,7 +25,7 @@ class RoomHandler {
           entities: this.potentialRoomEntities,
           exits: exits,
         };
-        console.log("[roomHandler] new room", roomEvent);
+
         this.eventBus.emit("new-room", roomEvent);
         this.potentialRoomName = null;
         this.potentialRoomItems = null;
@@ -35,7 +35,6 @@ class RoomHandler {
 
     this.eventBus.on("new-message-line", (event) => {
       try {
-        console.log(event);
         this.updateRoomName(event.message);
         this.updateRoomItems(event);
         this.updateRoomEntities(event);
@@ -60,7 +59,7 @@ class RoomHandler {
           .trim()
           .split(",")
           .map((exit) => exit.trim());
-        console.log("[roomHandler] Obvious exits:", exits);
+
         this.eventBus.emit("new-room-exits", exits);
       }
     }
@@ -75,8 +74,6 @@ class RoomHandler {
       message.spans[1].color.bright &&
       message.spans[1].color.name === "cyan"
     ) {
-      console.log("Potential Room Name:", message.spans[1].text);
-
       this.eventBus.emit("new-room-name", message.spans[1].text);
     }
   };
@@ -93,7 +90,7 @@ class RoomHandler {
       const items = itemsPart
         .split(",")
         .map((item) => item.trim().replace(/ here\.$/, ""));
-      console.log("[roomHandler] Items in room:", items);
+
       this.eventBus.emit("new-room-items", items);
     }
   };
@@ -116,7 +113,7 @@ class RoomHandler {
         ".",
         ""
       );
-      console.log("[roomHandler] Entities in room:", entities);
+
       this.eventBus.emit("new-room-entities", entities);
     }
   };

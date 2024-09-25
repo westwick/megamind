@@ -75,7 +75,6 @@ function initTerminal() {
 
   // Initialize the terminal in the 'terminal' div
   const terminalElement = document.getElementById("terminal");
-  const debuggerElement = document.getElementById("debugger");
 
   term.open(terminalElement);
   term.write("\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\r\n\x1b[0m");
@@ -102,30 +101,20 @@ function initTerminal() {
     window.electronAPI.sendData(data);
   });
 
-  debuggerElementRef = debuggerElement;
+  window.electronAPI.onNewRoom(updateRoom);
+
   return term;
 }
 
-function updateDebugger(info) {
-  if (!debuggerElementRef) {
-    console.error("Debugger element reference not set");
-    return;
-  }
+/*
+  const debugInfoElement = document.getElementById("debug-info");
+  const onlineUsersElement = document.getElementById("online-users");
+  const playerStatsElement = document.getElementById("player-stats"); */
 
-  const debugInfo = {
-    // mudAutomator: info,
-    /* TODO: need to wire up gameState thru eventsAPI
-    room: gameState.currentRoom,
-    onlineUsers: gameState.onlineUsers,
-    playerStats: playerStatsInstance.getStats(),
-    */
-  };
+function updateRoom(event, info) {
+  const roomInfoElement = document.getElementById("room-info");
 
-  debuggerElementRef.innerHTML = `<pre>${JSON.stringify(
-    debugInfo,
-    null,
-    2
-  )}</pre>`;
+  roomInfoElement.innerHTML = `<pre>${JSON.stringify(info, null, 2)}</pre>`;
 }
 
 function startLoginRoutine() {

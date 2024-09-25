@@ -50,33 +50,8 @@ class RealmHandler {
         })
         .filter(Boolean); // Remove any null values
       this.eventBus.emit("update-online-users", onlineUsers);
-      console.log("[realmHandler] Updated online users:", onlineUsers);
     }
   };
 }
-/* 
-    handleWhoCommand(message) {
-      if (
-        message.includes(
-          "[1;30m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
-        )
-      ) {
-        const lines = message.split("\n");
-        const userLines = lines.slice(1, -1); // Remove the first and last lines (separators)
-  
-        const onlineUsers = userLines
-          .map((line) => {
-            const match = line.match(/\[32m([^\s]+)/);
-            return match ? match[1] : null;
-          })
-          .filter(Boolean); // Remove any null values
-  
-        gameState.updateOnlineUsers(onlineUsers);
-        console.log("Updated online users:", onlineUsers);
-  
-        // Notify the event bus about the updated online users
-        this.eventBus.emit("update-online-users", onlineUsers);
-      }
-    }
-      */
+
 export default RealmHandler;
