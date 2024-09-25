@@ -13,6 +13,7 @@ body {
 #terminal {
   height: 640px;
   width: 700px;
+  min-width: 700px;
 }
 
 #terminal .xterm-bold {
