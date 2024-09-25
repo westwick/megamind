@@ -1,5 +1,6 @@
 <template>
   <div id="main-container">
+    <TopBar />
     <div class="flex w-full">
       <div id="terminal"></div>
       <div class="text-white flex-grow">
@@ -19,6 +20,7 @@
 
 <script setup>
 import ConversationsComponent from "./components/ConversationsComponent.vue";
+import TopBar from "./components/TopBar.vue";
 </script>
 
 <style>
