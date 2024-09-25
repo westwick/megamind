@@ -13,7 +13,10 @@
       placeholder=""
     />
     <div id="debugger">
-      <pre>init</pre>
+      <div id="debug-info"></div>
+      <div id="room-info"></div>
+      <div id="online-users"></div>
+      <div id="player-stats"></div>
     </div>
   </div>
 </template>

@@ -24,7 +24,6 @@ const conversationsContainer = ref(null); // Reference to the conversations cont
 
 onMounted(() => {
   // Use window.electronAPI directly
-  //   console.log(window.electronAPI);
   window.electronAPI.onConversation(handleNewConversation);
 });
 

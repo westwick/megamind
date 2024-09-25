@@ -152,18 +152,21 @@ function onLoginComplete() {
 
   currentRoutine = new MudAutomator(
     socket,
-    updateDebugger,
     gameState,
     playerStatsInstance,
     eventBus
   );
 
-  eventBus.on("conversation", (conversation) => {
-    console.log("conversation", conversation);
-    mainWindow.webContents.send("conversation", conversation);
-  });
+  forwardEventToRenderer("conversation");
+  forwardEventToRenderer("update-game-state");
+  forwardEventToRenderer("update-player-stats");
+  forwardEventToRenderer("new-room");
 }
 
-function updateDebugger(debugInfo) {
-  mainWindow.webContents.send("update-debug-info", debugInfo);
+function forwardEventToRenderer(eventName) {
+  eventBus.on(eventName, (data) => {
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send(eventName, data);
+    }
+  });
 }

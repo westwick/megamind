@@ -5,10 +5,9 @@ import ConversationHandler from "../handlers/conversationHandler";
 import RealmHandler from "../handlers/realmHandler";
 
 export class MudAutomator {
-  constructor(telnetSocket, debugCallback, gameState, playerStats, eventBus) {
+  constructor(telnetSocket, gameState, playerStats, eventBus) {
     console.log("MudAutomator started");
     this.telnetSocket = telnetSocket;
-    this.debugCallback = debugCallback;
     this.gameState = gameState;
     this.playerStats = playerStats;
     this.rawDataBuffer = [];
@@ -20,12 +19,6 @@ export class MudAutomator {
     this.conversationHandler = new ConversationHandler(this.eventBus);
     this.realmHandler = new RealmHandler(this.eventBus);
   }
-
-  debug = (info) => {
-    if (this.debugCallback) {
-      this.debugCallback(info);
-    }
-  };
 
   parse = (data) => {
     const dataString = data.dataTransformed;
@@ -50,13 +43,6 @@ export class MudAutomator {
 
     const parsedSpans = lines.map((line) => parse(line));
     this.processMessage(parsedSpans);
-
-    // Debug information
-    this.debug({
-      rawDataBufferLength: this.rawDataBuffer.length,
-      incompleteLineBuffer: this.incompleteLineBuffer,
-      lastProcessedLine: lines[lines.length - 1],
-    });
   };
 
   processMessage = (messages) => {
@@ -68,7 +54,6 @@ export class MudAutomator {
           line: line,
           message: msg,
         });
-        console.log("msg: " + line, msg);
         return line;
       }
       return [];
@@ -105,6 +90,7 @@ export class MudAutomator {
     }, 5000);
   };
 
+  // TODO: revise this to use the new parsed message system
   handleCombatState = (line) => {
     if (line.includes("[0;33m*Combat Engaged*")) {
       this.gameState.inCombat = true;
@@ -115,6 +101,7 @@ export class MudAutomator {
     }
   };
 
+  // TODO: revise this to use the new parsed message system
   handleEntityEnteringRoom = (line) => {
     const match = line.match(/\[1;33m(.*?)\[0;32m/);
     if (match) {
