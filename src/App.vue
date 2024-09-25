@@ -14,7 +14,7 @@
     />
     <div id="debugger">
       <div id="debug-info"></div>
-      <div id="room-info"></div>
+      <div id="room-info"><pre>init</pre></div>
       <div id="online-users"></div>
       <div id="player-stats"></div>
     </div>
