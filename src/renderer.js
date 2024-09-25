@@ -40,8 +40,6 @@ const app = createApp(App);
 
 app.mount("#app");
 
-let debuggerElementRef = null;
-
 function initTerminal() {
   // Create a new xterm.js terminal
   const term = new Terminal({
@@ -101,20 +99,7 @@ function initTerminal() {
     window.electronAPI.sendData(data);
   });
 
-  window.electronAPI.onNewRoom(updateRoom);
-
   return term;
-}
-
-/*
-  const debugInfoElement = document.getElementById("debug-info");
-  const onlineUsersElement = document.getElementById("online-users");
-  const playerStatsElement = document.getElementById("player-stats"); */
-
-function updateRoom(event, info) {
-  const roomInfoElement = document.getElementById("room-info");
-
-  roomInfoElement.innerHTML = `<pre>${JSON.stringify(info, null, 2)}</pre>`;
 }
 
 function startLoginRoutine() {

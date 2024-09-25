@@ -20,16 +20,10 @@ body {
   font-weight: normal !important;
 }
 
-#debugger {
-  background: #1f1e1e;
-  color: #00ff00;
-}
-
-pre {
+#font-loader {
   font-family: "perfect_dos_vga_437regular";
-  white-space: pre-wrap;
-  overflow-y: scroll;
-  height: 400px;
+  height: 1px;
+  opacity: 0.001;
 }
 
 ::-webkit-scrollbar {
