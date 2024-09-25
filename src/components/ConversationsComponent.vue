@@ -4,7 +4,7 @@
     <ul>
       <li
         v-for="conversation in conversations"
-        :key="conversation.id"
+        :key="conversation.timestamp"
         :class="getConversationClass(conversation.type)"
       >
         <span class="text-gray-500">{{
@@ -18,15 +18,11 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from "vue";
-import { mapState } from "vuex";
+import { useStore } from "vuex";
 
+const store = useStore();
 const conversationsContainer = ref(null);
-
-const storeState = mapState({
-  conversations: (state) => state.conversations.conversations,
-});
-
-const conversations = computed(() => storeState.conversations.value);
+const conversations = computed(() => store.state.conversations.conversations);
 
 watch(conversations, () => {
   nextTick(() => {

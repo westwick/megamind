@@ -40,12 +40,16 @@ const app = createApp(App);
 app.use(store);
 app.mount("#app");
 
+// todo: find a better place to put these
 window.electronAPI.onNewRoom((event, info) => {
-  console.log("onNewRoom", JSON.stringify(info, null, 2));
   store.dispatch("game/updateGameState", {
     type: "NEW_ROOM",
     payload: info,
   });
+});
+
+window.electronAPI.onConversation((event, conversation) => {
+  store.dispatch("conversations/addConversation", conversation);
 });
 
 function initTerminal() {
