@@ -1,5 +1,5 @@
 <template>
-  <div class="conversations">
+  <div class="conversations" ref="conversationsContainer">
     <h2 class="text-center uppercase text-gray-500 text-xs">Conversations</h2>
     <ul>
       <li
@@ -17,18 +17,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, nextTick } from "vue";
 
 const conversations = ref([]);
+const conversationsContainer = ref(null); // Reference to the conversations container
 
 onMounted(() => {
   // Use window.electronAPI directly
-  console.log(window.electronAPI);
+  //   console.log(window.electronAPI);
   window.electronAPI.onConversation(handleNewConversation);
 });
 
 function handleNewConversation(event, conversation) {
   conversations.value.push(conversation);
+  // Scroll to the bottom after the DOM updates
+  nextTick(() => {
+    if (conversationsContainer.value) {
+      conversationsContainer.value.scrollTop =
+        conversationsContainer.value.scrollHeight;
+    }
+  });
 }
 
 function getConversationClass(type) {
