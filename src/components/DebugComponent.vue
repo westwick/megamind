@@ -6,23 +6,34 @@
     </div>
     <div class="flex-1 p-2">
       <p class="text-center">Online Users</p>
+      <pre>{{ onlineUsers }}</pre>
     </div>
     <div class="flex-1 p-2">
       <p class="text-center">Player Stats</p>
+      <pre>{{ playerStats }}</pre>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed } from "vue";
+import { mapState } from "vuex";
 
-const roomInfo = ref("init");
-
-onMounted(() => {
-  window.electronAPI.onNewRoom((event, info) => {
-    roomInfo.value = JSON.stringify(info, null, 2);
-  });
+const storeState = mapState({
+  roomInfo: (state) => state.game.roomInfo,
+  onlineUsers: (state) => state.game.onlineUsers,
+  playerStats: (state) => state.game.playerStats,
 });
+
+const roomInfo = computed(() =>
+  JSON.stringify(storeState.roomInfo.value, null, 2)
+);
+const onlineUsers = computed(() =>
+  JSON.stringify(storeState.onlineUsers.value, null, 2)
+);
+const playerStats = computed(() =>
+  JSON.stringify(storeState.playerStats.value, null, 2)
+);
 </script>
 
 <style scoped>

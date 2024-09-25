@@ -1,20 +1,18 @@
-import playerStats from "../state/playerStats";
 import { strip, parse } from "ansicolor";
 import RoomHandler from "../handlers/roomHandler";
 import ConversationHandler from "../handlers/conversationHandler";
 import RealmHandler from "../handlers/realmHandler";
 
 export class MudAutomator {
-  constructor(telnetSocket, gameState, playerStats, eventBus) {
+  constructor(telnetSocket, mainStateManager, eventBus) {
     console.log("MudAutomator started");
     this.telnetSocket = telnetSocket;
-    this.gameState = gameState;
-    this.playerStats = playerStats;
+    this.mainStateManager = mainStateManager;
+    this.eventBus = eventBus;
     this.rawDataBuffer = [];
     this.maxRawDataBufferSize = 10; // Store last 10 raw data chunks
     this.incompleteLineBuffer = "";
     this.startStatsUpdateInterval();
-    this.eventBus = eventBus;
     this.roomHandler = new RoomHandler(this.eventBus);
     this.conversationHandler = new ConversationHandler(this.eventBus);
     this.realmHandler = new RealmHandler(this.eventBus);
@@ -70,7 +68,7 @@ export class MudAutomator {
     const match = line.match(/You gain (\d+) experience\./);
     if (match) {
       const expGained = parseInt(match[1], 10);
-      playerStats.addExperience(expGained);
+      this.addExperience(expGained);
       console.log(`Gained ${expGained} experience`);
 
       // Notify the renderer about the updated experience
@@ -78,9 +76,48 @@ export class MudAutomator {
     }
   };
 
+  addExperience = (amount) => {
+    const currentStats = this.mainStateManager.getState().playerStats;
+    const newExperience = (currentStats.experienceGained || 0) + amount;
+    this.mainStateManager.updateState("playerStats", {
+      ...currentStats,
+      experienceGained: newExperience,
+    });
+  };
+
   updatePlayerStats = () => {
-    const stats = this.playerStats.getStats();
+    const stats = this.getPlayerStats();
     this.eventBus.emit("update-player-stats", stats);
+  };
+
+  getPlayerStats = () => {
+    const currentStats = this.mainStateManager.getState().playerStats;
+    return {
+      ...currentStats,
+      experiencePerHour: this.getExperiencePerHour(),
+      sessionDuration: this.getSessionDuration(),
+    };
+  };
+
+  getExperiencePerHour = () => {
+    const { sessionStartTime, experienceGained } =
+      this.mainStateManager.getState().playerStats;
+    if (!sessionStartTime) {
+      return 0;
+    }
+    const now = new Date();
+    const hoursElapsed = (now - new Date(sessionStartTime)) / (1000 * 60 * 60);
+    return Math.round((experienceGained / hoursElapsed) * 60);
+  };
+
+  getSessionDuration = () => {
+    const { sessionStartTime } = this.mainStateManager.getState().playerStats;
+    if (!sessionStartTime) {
+      return 0;
+    }
+    const now = new Date();
+    const duration = (now - new Date(sessionStartTime)) / (1000 * 60 * 60);
+    return Math.round(duration);
   };
 
   startStatsUpdateInterval = () => {

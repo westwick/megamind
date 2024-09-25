@@ -1,34 +1,53 @@
 export class PlayerStats {
-  constructor() {
-    this.experienceGained = 0;
-    this.sessionStartTime = null;
+  constructor(eventBus, mainStateManager) {
+    this.eventBus = eventBus;
+    this.mainStateManager = mainStateManager;
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    // Listen for relevant events and update state
+    this.eventBus.on("experience-gained", this.addExperience);
+    // Add more event listeners as needed
   }
 
   startSession = () => {
-    this.sessionStartTime = new Date();
-    this.experienceGained = 0;
+    this.mainStateManager.updateState("playerStats", {
+      experienceGained: 0,
+      sessionStartTime: new Date().toISOString(),
+    });
   };
 
   addExperience = (amount) => {
-    this.experienceGained += amount;
-    console.log(`Total experience gained: ${this.experienceGained}`);
+    const currentStats = this.mainStateManager.getState().playerStats;
+    const newExperience = (currentStats.experienceGained || 0) + amount;
+    this.mainStateManager.updateState("playerStats", {
+      ...currentStats,
+      experienceGained: newExperience,
+    });
+    console.log(`Total experience gained: ${newExperience}`);
   };
 
   getExperiencePerHour = () => {
-    if (!this.sessionStartTime) {
+    const { sessionStartTime, experienceGained } =
+      this.mainStateManager.getState().playerStats;
+    if (!sessionStartTime) {
       return 0;
     }
     const now = new Date();
-    const hoursElapsed = (now - this.sessionStartTime) / (1000 * 60 * 60);
-    return Math.round(this.experienceGained / hoursElapsed);
+    const hoursElapsed = (now - new Date(sessionStartTime)) / (1000 * 60 * 60);
+    return Math.round(experienceGained / hoursElapsed);
   };
 
   getSessionDuration = () => {
-    if (!this.sessionStartTime) {
+    const { sessionStartTime } = this.mainStateManager.getState().playerStats;
+    if (!sessionStartTime) {
       return "0:00:00";
     }
     const now = new Date();
-    const durationInSeconds = Math.floor((now - this.sessionStartTime) / 1000);
+    const durationInSeconds = Math.floor(
+      (now - new Date(sessionStartTime)) / 1000
+    );
     const hours = Math.floor(durationInSeconds / 3600);
     const minutes = Math.floor((durationInSeconds % 3600) / 60);
     const seconds = durationInSeconds % 60;
@@ -38,18 +57,20 @@ export class PlayerStats {
   };
 
   getStats = () => {
+    const currentStats = this.mainStateManager.getState().playerStats;
     return {
-      experienceGained: this.experienceGained,
+      ...currentStats,
       experiencePerHour: this.getExperiencePerHour(),
       sessionDuration: this.getSessionDuration(),
-      sessionStartTime: this.sessionStartTime,
     };
   };
 
   reset = () => {
-    this.experienceGained = 0;
-    this.sessionStartTime = null;
+    this.mainStateManager.updateState("playerStats", {
+      experienceGained: 0,
+      sessionStartTime: null,
+    });
   };
 }
 
-export default new PlayerStats();
+export default PlayerStats;

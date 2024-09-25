@@ -8,6 +8,7 @@ import { LoginAutomator } from "./routines/loginAutomator.js";
 import { GameState } from "./state/gameState.js";
 import { PlayerStats } from "./state/playerStats.js";
 import { EventEmitter } from "events";
+import { MainStateManager } from "./state/MainStateManager.js";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -91,6 +92,7 @@ let currentRoutine = null;
 let gameState;
 let playerStatsInstance;
 let eventBus = new EventEmitter();
+let mainStateManager;
 
 ipcMain.on("connect-to-server", (event) => {
   initializeGame();
@@ -142,31 +144,25 @@ ipcMain.on("send-data", (event, data) => {
 function initializeGame() {
   currentRoutine = null;
   config = loadConfig();
-  gameState = new GameState(eventBus);
-  playerStatsInstance = new PlayerStats(eventBus);
+  mainStateManager = new MainStateManager();
+  gameState = new GameState(eventBus, mainStateManager);
+  playerStatsInstance = new PlayerStats(eventBus, mainStateManager);
   playerStatsInstance.startSession();
+
+  // Set up listeners for state changes
+  mainStateManager.on("stateChanged", ({ key, value }) => {
+    forwardEventToRenderer(key, value);
+  });
 }
 
 function onLoginComplete() {
   console.log("Login automation complete");
 
-  currentRoutine = new MudAutomator(
-    socket,
-    gameState,
-    playerStatsInstance,
-    eventBus
-  );
-
-  forwardEventToRenderer("conversation");
-  forwardEventToRenderer("update-game-state");
-  forwardEventToRenderer("update-player-stats");
-  forwardEventToRenderer("new-room");
+  currentRoutine = new MudAutomator(socket, mainStateManager, eventBus);
 }
 
-function forwardEventToRenderer(eventName) {
-  eventBus.on(eventName, (data) => {
-    if (mainWindow && mainWindow.webContents) {
-      mainWindow.webContents.send(eventName, data);
-    }
-  });
+function forwardEventToRenderer(key, value) {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send("state-update", { key, value });
+  }
 }

@@ -31,14 +31,40 @@ import { FitAddon } from "xterm-addon-fit";
 import { WebLinksAddon } from "xterm-addon-web-links";
 // import { WebglAddon } from "@xterm/addon-webgl";
 import { createApp } from "vue";
-
 import App from "./App.vue";
+import store from "./store";
 import "./assets/css/index.css";
 import "./assets/css/fonts.css";
 
 const app = createApp(App);
-
+app.use(store);
 app.mount("#app");
+
+window.electronAPI.onStateUpdate((event, { key, value }) => {
+  switch (key) {
+    case "roomData":
+      store.dispatch("game/updateGameState", {
+        type: "NEW_ROOM",
+        payload: value,
+      });
+      break;
+    case "onlineUsers":
+      store.dispatch("game/updateGameState", {
+        type: "UPDATE_ONLINE_USERS",
+        payload: value,
+      });
+      break;
+    case "playerStats":
+      store.dispatch("game/updateGameState", {
+        type: "UPDATE_PLAYER_STATS",
+        payload: value,
+      });
+      break;
+    case "conversations":
+      store.dispatch("conversations/addConversation", value);
+      break;
+  }
+});
 
 function initTerminal() {
   // Create a new xterm.js terminal

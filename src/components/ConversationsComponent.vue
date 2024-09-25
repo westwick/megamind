@@ -17,26 +17,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
+import { mapState } from "vuex";
 
-const conversations = ref([]);
-const conversationsContainer = ref(null); // Reference to the conversations container
+const conversationsContainer = ref(null);
 
-onMounted(() => {
-  // Use window.electronAPI directly
-  window.electronAPI.onConversation(handleNewConversation);
+const storeState = mapState({
+  conversations: (state) => state.conversations.conversations,
 });
 
-function handleNewConversation(event, conversation) {
-  conversations.value.push(conversation);
-  // Scroll to the bottom after the DOM updates
+const conversations = computed(() => storeState.conversations.value);
+
+watch(conversations, () => {
   nextTick(() => {
     if (conversationsContainer.value) {
       conversationsContainer.value.scrollTop =
         conversationsContainer.value.scrollHeight;
     }
   });
-}
+});
 
 function getConversationClass(type) {
   switch (type) {
