@@ -1,7 +1,11 @@
 export class PlayerStats {
   constructor() {
-    this.experienceGained = 0;
     this.sessionStartTime = null;
+    this.experienceGained = 0;
+    this.expNeededToLevel = 0;
+    this.currentExp = 0;
+    this.level = 0;
+    this.totalExpForNextLevel = 0;
   }
 
   startSession = () => {
@@ -11,7 +15,46 @@ export class PlayerStats {
 
   addExperience = (amount) => {
     this.experienceGained += amount;
-    console.log(`Total experience gained: ${this.experienceGained}`);
+    this.currentExp += amount;
+    this.expNeededToLevel = Math.max(0, this.expNeededToLevel - amount);
+  };
+
+  setExpNeededToLevel = (amount) => {
+    this.expNeededToLevel = amount;
+  };
+
+  setCurrentExp = (amount) => {
+    this.currentExp = amount;
+  };
+
+  setLevel = (level) => {
+    this.level = level;
+  };
+
+  setTotalExpForNextLevel = (amount) => {
+    this.totalExpForNextLevel = amount;
+  };
+
+  getTimeToLevel = () => {
+    if (this.expNeededToLevel === 0 || this.getExperiencePerHour() === 0) {
+      return "N/A";
+    }
+    const hoursToLevel = this.expNeededToLevel / this.getExperiencePerHour();
+    return this.formatTime(hoursToLevel);
+  };
+
+  formatTime = (hours) => {
+    if (hours < 1) {
+      return `${Math.round(hours * 60)} minutes`;
+    } else if (hours < 24) {
+      const wholeHours = Math.floor(hours);
+      const minutes = Math.round((hours % 1) * 60);
+      return `${wholeHours}h ${minutes}m`;
+    } else {
+      const days = Math.floor(hours / 24);
+      const remainingHours = Math.floor(hours % 24);
+      return `${days}d ${remainingHours}h`;
+    }
   };
 
   getExperiencePerHour = () => {
@@ -39,10 +82,12 @@ export class PlayerStats {
 
   getStats = () => {
     return {
-      experienceGained: this.experienceGained,
-      experiencePerHour: this.getExperiencePerHour(),
       sessionDuration: this.getSessionDuration(),
       sessionStartTime: this.sessionStartTime,
+      experienceGained: this.experienceGained,
+      experiencePerHour: this.getExperiencePerHour(),
+      expNeededToLevel: this.expNeededToLevel,
+      timeToLevel: this.getTimeToLevel(),
     };
   };
 

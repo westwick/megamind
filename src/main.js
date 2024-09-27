@@ -161,6 +161,7 @@ function onLoginComplete() {
   forwardEventToRenderer("update-game-state");
   forwardEventToRenderer("update-player-stats");
   forwardEventToRenderer("new-room");
+  forwardEventToRenderer("update-online-users");
 }
 
 function forwardEventToRenderer(eventName) {

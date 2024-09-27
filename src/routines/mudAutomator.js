@@ -3,6 +3,9 @@ import { strip, parse } from "ansicolor";
 import RoomHandler from "../handlers/roomHandler";
 import ConversationHandler from "../handlers/conversationHandler";
 import RealmHandler from "../handlers/realmHandler";
+import CombatHandler from "../handlers/combatHandler";
+import HealthHandler from "../handlers/healthHandler";
+import CommandManager from "./commandManager";
 
 export class MudAutomator {
   constructor(telnetSocket, gameState, playerStats, eventBus) {
@@ -15,9 +18,23 @@ export class MudAutomator {
     this.incompleteLineBuffer = "";
     this.startStatsUpdateInterval();
     this.eventBus = eventBus;
-    this.roomHandler = new RoomHandler(this.eventBus);
+    this.commandManager = new CommandManager(this.telnetSocket);
+
+    this.roomHandler = new RoomHandler(this.eventBus, this.commandManager);
     this.conversationHandler = new ConversationHandler(this.eventBus);
     this.realmHandler = new RealmHandler(this.eventBus);
+    this.combatHandler = new CombatHandler(
+      this.eventBus,
+      this.commandManager,
+      this.gameState,
+      this.playerStats
+    );
+    this.healthHandler = new HealthHandler(
+      this.eventBus,
+      this.commandManager,
+      this.gameState,
+      this.playerStats
+    );
   }
 
   parse = (data) => {
@@ -66,18 +83,6 @@ export class MudAutomator {
     });
   };
 
-  handleExperienceGain = (line) => {
-    const match = line.match(/You gain (\d+) experience\./);
-    if (match) {
-      const expGained = parseInt(match[1], 10);
-      playerStats.addExperience(expGained);
-      console.log(`Gained ${expGained} experience`);
-
-      // Notify the renderer about the updated experience
-      this.updatePlayerStats();
-    }
-  };
-
   updatePlayerStats = () => {
     const stats = this.playerStats.getStats();
     this.eventBus.emit("update-player-stats", stats);
@@ -88,43 +93,6 @@ export class MudAutomator {
     setInterval(() => {
       this.updatePlayerStats();
     }, 5000);
-  };
-
-  // TODO: revise this to use the new parsed message system
-  handleCombatState = (line) => {
-    if (line.includes("[0;33m*Combat Engaged*")) {
-      this.gameState.inCombat = true;
-      console.log("Entered combat state");
-    } else if (line.includes("[0;33m*Combat Off*")) {
-      this.gameState.inCombat = false;
-      console.log("Exited combat state");
-    }
-  };
-
-  // TODO: revise this to use the new parsed message system
-  handleEntityEnteringRoom = (line) => {
-    const match = line.match(/\[1;33m(.*?)\[0;32m/);
-    if (match) {
-      let entityName = this.stripAnsi(match[1].trim());
-      // Remove "A " or "An " from the beginning if present
-      entityName = entityName.replace(/^(A|An)\s+/i, "");
-      // Remove any trailing characters (like periods or escape codes)
-      entityName = entityName.replace(/[.\u001b].*$/, "");
-
-      // instead of updating everything again, lets just look in the current room
-      // and let the other room update handle the rest
-      this.sendCommand("");
-    }
-  };
-
-  isPlayer = (entityName) => {
-    // Check if the entity name (or its first word) matches any online user
-    const entityFirstName = entityName.split(" ")[0].toLowerCase();
-    return this.gameState.onlineUsers.some(
-      (user) =>
-        user.toLowerCase() === entityFirstName ||
-        user.toLowerCase().startsWith(entityFirstName)
-    );
   };
 
   sendCommand = (command) => {

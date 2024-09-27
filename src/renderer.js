@@ -52,6 +52,21 @@ window.electronAPI.onConversation((event, conversation) => {
   store.dispatch("conversations/addConversation", conversation);
 });
 
+window.electronAPI.onPlayerStats((event, stats) => {
+  // console.log("Player stats updated:", stats);
+  store.dispatch("game/updateGameState", {
+    type: "UPDATE_PLAYER_STATS",
+    payload: stats,
+  });
+});
+
+window.electronAPI.onUpdateOnlineUsers((event, users) => {
+  store.dispatch("game/updateGameState", {
+    type: "UPDATE_ONLINE_USERS",
+    payload: users,
+  });
+});
+
 function initTerminal() {
   // Create a new xterm.js terminal
   const term = new Terminal({
