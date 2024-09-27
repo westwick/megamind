@@ -4,7 +4,7 @@
     <ul>
       <li
         v-for="conversation in conversations"
-        :key="conversation.id"
+        :key="conversation.timestamp"
         :class="getConversationClass(conversation.type)"
       >
         <span class="text-gray-500">{{
@@ -17,26 +17,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
+import { useStore } from "vuex";
 
-const conversations = ref([]);
-const conversationsContainer = ref(null); // Reference to the conversations container
+const store = useStore();
+const conversationsContainer = ref(null);
+const conversations = computed(() => store.state.conversations.conversations);
 
-onMounted(() => {
-  // Use window.electronAPI directly
-  window.electronAPI.onConversation(handleNewConversation);
-});
-
-function handleNewConversation(event, conversation) {
-  conversations.value.push(conversation);
-  // Scroll to the bottom after the DOM updates
+watch(conversations, () => {
   nextTick(() => {
     if (conversationsContainer.value) {
       conversationsContainer.value.scrollTop =
         conversationsContainer.value.scrollHeight;
     }
   });
-}
+});
 
 function getConversationClass(type) {
   switch (type) {

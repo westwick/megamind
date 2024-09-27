@@ -61,7 +61,7 @@
           title="Auto-Get"
           @click="toggleAutoAction('autoGet')"
         >
-          <Grab class="icon" fill="" />
+          <Hand class="icon" fill="rgba(100, 100, 0, 0.8)" />
         </div>
         <div
           class="icon-container"
@@ -103,7 +103,7 @@ import {
   Swords,
   Cross,
   Sparkles,
-  Grab,
+  Hand,
   Footprints,
   User,
 } from "lucide-vue-next";

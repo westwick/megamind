@@ -1,6 +1,7 @@
 class RoomHandler {
-  constructor(eventBus) {
+  constructor(eventBus, commandManager) {
     this.eventBus = eventBus;
+    this.commandManager = commandManager;
 
     this.potentialRoomName = null;
     // TODO -- add an event subscription to outbound commands to check
@@ -39,9 +40,14 @@ class RoomHandler {
         this.updateRoomItems(event);
         this.updateRoomEntities(event);
         this.updateRoomExits(event.message);
+        this.handleEntityEnteringRoom(event);
       } catch (error) {
         console.error("[roomHandler] Error processing line:", error);
       }
+    });
+
+    this.eventBus.on("new-room", (event) => {
+      this.handleAutoGetItems(event);
     });
   }
 
@@ -115,6 +121,46 @@ class RoomHandler {
       );
 
       this.eventBus.emit("new-room-entities", entities);
+    }
+  };
+
+  handleEntityEnteringRoom = (event) => {
+    const message = event.message;
+    if (message.spans && message.spans.length >= 2) {
+      for (let i = 0; i < message.spans.length - 1; i++) {
+        const currentSpan = message.spans[i];
+        const nextSpan = message.spans[i + 1];
+
+        if (
+          currentSpan.color &&
+          currentSpan.color.name === "yellow" &&
+          currentSpan.color.bright &&
+          nextSpan.color &&
+          nextSpan.color.name === "green"
+        ) {
+          let entityName = currentSpan.text.trim();
+          // Remove "A " or "An " from the beginning if present
+          entityName = entityName.replace(/^(A|An)\s+/i, "");
+          // Remove any trailing characters (like periods)
+          entityName = entityName.replace(/\.$/, "");
+
+          // instead of updating everything again, lets just look in the current room
+          // and let the other room update handle the rest
+          this.commandManager.sendCommand("");
+          break; // Exit the loop once we've found and processed the entity
+        }
+      }
+    }
+  };
+
+  // this should be moved somewhere else, "itemHandler" ?
+  handleAutoGetItems = (event) => {
+    if (event.items && event.items.length > 0) {
+      event.items.forEach((item) => {
+        if (item.includes("silver") || item.includes("copper")) {
+          this.commandManager.sendCommand(`get ${item}`);
+        }
+      });
     }
   };
 }
