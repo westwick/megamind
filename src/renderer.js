@@ -67,6 +67,14 @@ window.electronAPI.onUpdateOnlineUsers((event, users) => {
   });
 });
 
+window.electronAPI.onGameStateUpdated((event, gameState) => {
+  console.log("gameStateUpdated", gameState);
+  store.dispatch("game/updateGameState", {
+    type: "UPDATE_GAME_STATE",
+    payload: gameState,
+  });
+});
+
 function initTerminal() {
   // Create a new xterm.js terminal
   const term = new Terminal({
@@ -119,6 +127,10 @@ function initTerminal() {
 
   window.electronAPI.onServerError((err) => {
     term.write(`\x1b[44m\x1b[37m\r\n*** Error: ${err} ***\r\n\x1b[0m`);
+  });
+
+  window.electronAPI.onTerminalWrite((event, data) => {
+    term.write(`\x1b[44m\x1b[37m\r\n*** ${data} ***\r\n\x1b[0m`);
   });
 
   // Handle user input

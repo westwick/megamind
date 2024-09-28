@@ -18,4 +18,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onPlayerStats: (callback) => ipcRenderer.on("update-player-stats", callback),
   onUpdateOnlineUsers: (callback) =>
     ipcRenderer.on("update-online-users", callback),
+  onGameStateUpdated: (callback) =>
+    ipcRenderer.on("game-state-updated", callback),
+  onTerminalWrite: (callback) => ipcRenderer.on("terminal-write", callback),
 });

@@ -1,8 +1,8 @@
 <template>
   <div id="debugger" class="flex flex-row justify-between text-white">
     <div class="flex-1 p-2">
-      <p class="text-center">Room Info</p>
-      <pre>{{ roomInfoString }}</pre>
+      <p class="text-center">Game State</p>
+      <pre>{{ gameStateString }}</pre>
     </div>
     <div class="flex-1 p-2">
       <p class="text-center">Online Users</p>
@@ -24,6 +24,7 @@ const store = useStore();
 const roomInfo = computed(() => store.state.game.roomInfo);
 const onlineUsers = computed(() => store.state.game.onlineUsers);
 const playerStats = computed(() => store.state.game.playerStats);
+const gameState = computed(() => store.state.game.gameState);
 
 const roomInfoString = computed(() => JSON.stringify(roomInfo.value, null, 2));
 const onlineUsersString = computed(() =>
@@ -31,6 +32,9 @@ const onlineUsersString = computed(() =>
 );
 const playerStatsString = computed(() =>
   JSON.stringify(playerStats.value, null, 2)
+);
+const gameStateString = computed(() =>
+  JSON.stringify(gameState.value, null, 2)
 );
 </script>
 

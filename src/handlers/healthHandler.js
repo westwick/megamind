@@ -28,8 +28,13 @@ class HealthHandler {
         hp !== this.gameState.player.health ||
         ma !== this.gameState.player.mana
       ) {
-        this.gameState.player.health = hp;
-        this.gameState.player.mana = ma;
+        this.gameState.setState({
+          player: {
+            ...this.gameState.player,
+            health: hp,
+            mana: ma,
+          },
+        });
         this.handleHealthUpdate(hp, ma);
         this.eventBus.emit("health-update", this.gameState.player);
       }

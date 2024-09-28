@@ -31,7 +31,7 @@ class CombatHandler {
       const targetEntity = this.findSuitableTarget(event.entities);
       if (targetEntity) {
         this.commandManager.sendCommand(`attack ${targetEntity}`);
-        this.gameState.inCombat = true;
+        this.gameState.setState({ inCombat: true });
       }
     }
   }
@@ -54,9 +54,9 @@ class CombatHandler {
 
   handleCombatState(line) {
     if (line.includes("*Combat Engaged*")) {
-      this.gameState.inCombat = true;
+      this.gameState.setState({ inCombat: true });
     } else if (line.includes("*Combat Off*")) {
-      this.gameState.inCombat = false;
+      this.gameState.setState({ inCombat: false });
     }
   }
 

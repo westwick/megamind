@@ -42,14 +42,14 @@ export class LoginAutomator {
 
     if (lastLine.includes("Enter your password:")) {
       this.sendCommand(this.loginInfo.password);
-      this.gameState.isLoggedIn = true;
+      this.gameState.setState({ isLoggedIn: true });
     }
   };
 
   handleGameEntry = (lastLine) => {
     if (lastLine.includes("[MAJORMUD]:")) {
       this.sendCommand("enter");
-      this.gameState.hasEnteredGame = true;
+      this.gameState.setState({ hasEnteredGame: true });
     }
   };
 

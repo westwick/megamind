@@ -20,10 +20,28 @@ export class GameState {
 
   updateCurrentRoom(room) {
     this.currentRoom = room;
+    this.emitState();
   }
 
   updateOnlineUsers(users) {
     this.onlineUsers = users;
+    this.emitState();
+  }
+
+  setState(newState) {
+    Object.assign(this, newState);
+    this.emitState();
+  }
+
+  emitState() {
+    this.eventBus.emit("game-state-updated", {
+      loggedIn: this.isLoggedIn,
+      hasEnteredGame: this.hasEnteredGame,
+      hasSentCustomCommand: this.hasSentCustomCommand,
+      currentRoom: this.currentRoom,
+      inCombat: this.inCombat,
+      player: this.player,
+    });
   }
 }
 

@@ -1,3 +1,5 @@
+import { writeToTerminal } from "../main";
+
 class HealingStrategy {
   constructor(gameState, commandManager, eventBus) {
     this.gameState = gameState;
@@ -31,6 +33,7 @@ class HealingStrategy {
 
   async pathToHealer() {
     console.log("Executing pathToHealer");
+    writeToTerminal("Executing pathToHealer");
     this.expectedRoom = "Newhaven, Healer";
     this.commandManager.sendCommand("u");
     this.commandManager.sendCommand("break");
@@ -40,13 +43,15 @@ class HealingStrategy {
 
   async heal() {
     console.log("Executing heal");
+    writeToTerminal("Executing heal");
     this.commandManager.sendCommand("buy healing");
     // Wait for healing to complete (you might need to implement a way to detect this)
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   async convertMoney() {
     console.log("Executing convertMoney");
+    writeToTerminal("Executing convertMoney");
     this.expectedRoom = "Newhaven, General Store";
     this.commandManager.sendCommand("e");
     this.commandManager.sendCommand("e");
@@ -55,11 +60,12 @@ class HealingStrategy {
     this.commandManager.sendCommand("buy torch");
     this.commandManager.sendCommand("sell torch");
     // Wait for money conversion to complete
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 400));
   }
 
   async pathToCombatArea() {
     console.log("Executing pathToCombatArea");
+    writeToTerminal("Executing pathToCombatArea");
     this.expectedRoom = "Newhaven, Arena";
     this.commandManager.sendCommand("n");
     this.commandManager.sendCommand("w");

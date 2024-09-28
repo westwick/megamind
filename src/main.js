@@ -91,6 +91,7 @@ let currentRoutine = null;
 let gameState;
 let playerStatsInstance;
 let eventBus = new EventEmitter();
+forwardEventToRenderer("game-state-updated");
 
 ipcMain.on("connect-to-server", (event) => {
   initializeGame();
@@ -158,7 +159,6 @@ function onLoginComplete() {
   );
 
   forwardEventToRenderer("conversation");
-  forwardEventToRenderer("update-game-state");
   forwardEventToRenderer("update-player-stats");
   forwardEventToRenderer("new-room");
   forwardEventToRenderer("update-online-users");
@@ -171,3 +171,9 @@ function forwardEventToRenderer(eventName) {
     }
   });
 }
+
+export const writeToTerminal = (data) => {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send("terminal-write", data);
+  }
+};
