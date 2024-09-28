@@ -89,6 +89,7 @@ function initTerminal() {
       background: "#000000",
       foreground: "#ffffff",
       black: "#000000",
+      brightRed: "#ff0000",
       brightGreen: "#00ff00",
       brightYellow: "#ffff00",
       magenta: "#800080",
@@ -143,7 +144,7 @@ function initTerminal() {
 
 function startLoginRoutine() {
   initTerminal();
-  window.electronAPI.connectToServer();
+  // window.electronAPI.connectToServer();
 }
 
 setTimeout(() => {

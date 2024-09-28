@@ -6,6 +6,7 @@
           class="icon-container"
           :class="{ 'icon-active': isConnectedToServer }"
           title="Connect to server"
+          @click="connectToServer"
         >
           <PlugZap class="icon" :fill="isConnectedToServer ? 'yellow' : ''" />
         </div>
@@ -85,13 +86,14 @@
     </div>
     <Transition name="slide">
       <div v-if="isSettingsOpen" class="settings-area">
-        <!-- Settings content will go here -->
+        <AppSettings />
       </div>
     </Transition>
   </div>
 </template>
 
 <script setup>
+import AppSettings from "./AppSettings.vue";
 import { ref } from "vue";
 import {
   PlugZap,
@@ -109,7 +111,7 @@ import {
 } from "lucide-vue-next";
 
 const isSettingsOpen = ref(false);
-const isConnectedToServer = ref(true);
+const isConnectedToServer = ref(false);
 const isStopMoving = ref(true);
 
 const autoAll = ref(true);
@@ -153,6 +155,16 @@ const toggleAutoAction = (actionName) => {
       break;
   }
 };
+
+const connectToServer = async () => {
+  try {
+    await window.electronAPI.connectToServer();
+    isConnectedToServer.value = true;
+  } catch (error) {
+    console.error("Failed to connect to server:", error);
+    isConnectedToServer.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -186,13 +198,13 @@ const toggleAutoAction = (actionName) => {
 .settings-area {
   @apply w-full border-b border-gray-700;
   /*bg-zinc-800*/
-  background-color: rgba(55, 65, 81, 0.9);
-  backdrop-filter: blur(2px);
+  /* background-color: rgba(55, 65, 81, 0.9);
+  backdrop-filter: blur(2px); */
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  height: 200px;
+  /* height: 200px; */
   z-index: 9;
 }
 
