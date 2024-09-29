@@ -1,5 +1,6 @@
 # Config
 config.json
+playerConfig.json
 
 # Data
 data/*.mdb
