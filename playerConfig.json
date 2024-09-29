@@ -1,0 +1,8 @@
+{
+  "autoAll": true,
+  "autoCombat": true,
+  "autoHeal": true,
+  "autoBless": true,
+  "autoGet": true,
+  "autoSneak": true
+}

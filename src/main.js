@@ -7,6 +7,7 @@ import { MudAutomator } from "./routines/mudAutomator.js";
 import { LoginAutomator } from "./routines/loginAutomator.js";
 import { GameState } from "./state/gameState.js";
 import { PlayerStats } from "./state/playerStats.js";
+import playerConfig from "./state/playerConfig.js";
 import { EventEmitter } from "events";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -138,6 +139,14 @@ ipcMain.on("send-data", (event, data) => {
   if (socket) {
     socket.write(data);
   }
+});
+
+ipcMain.handle("get-player-config", () => {
+  return playerConfig.getConfig();
+});
+
+ipcMain.on("update-player-config", (event, newConfig) => {
+  playerConfig.updateConfig(newConfig);
 });
 
 function initializeGame() {

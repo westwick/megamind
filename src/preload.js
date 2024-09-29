@@ -5,6 +5,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
   loadConfig: () => ipcRenderer.invoke("load-config"),
+
+  // server and stuff
   connectToServer: (data) => ipcRenderer.send("connect-to-server", data),
   onServerConnected: (callback) => ipcRenderer.on("server-connected", callback),
   onServerData: (callback) =>
@@ -13,6 +15,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onServerError: (callback) =>
     ipcRenderer.on("server-error", (event, error) => callback(error)),
   sendData: (data) => ipcRenderer.send("send-data", data),
+  onTerminalWrite: (callback) => ipcRenderer.on("terminal-write", callback),
+
+  // game state and stuff
   onNewRoom: (callback) => ipcRenderer.on("new-room", callback),
   onConversation: (callback) => ipcRenderer.on("conversation", callback),
   onPlayerStats: (callback) => ipcRenderer.on("update-player-stats", callback),
@@ -20,5 +25,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("update-online-users", callback),
   onGameStateUpdated: (callback) =>
     ipcRenderer.on("game-state-updated", callback),
-  onTerminalWrite: (callback) => ipcRenderer.on("terminal-write", callback),
+
+  // player config
+  getPlayerConfig: () => ipcRenderer.invoke("get-player-config"),
+  updatePlayerConfig: (newConfig) =>
+    ipcRenderer.send("update-player-config", newConfig),
 });

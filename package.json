@@ -1,8 +1,8 @@
 {
-  "name": "megamind-vue",
-  "productName": "megamind-vue",
+  "name": "megamind",
+  "productName": "megamind",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "Megamind for MajorMUD",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
