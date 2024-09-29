@@ -75,7 +75,7 @@
       </div>
       <div class="flex items-center">
         <div
-          class="icon-container"
+          class="icon-container settings-button"
           :class="{ active: isSettingsOpen }"
           title="Settings"
           @click="toggleSettings"
@@ -95,6 +95,7 @@
 <script setup>
 import AppSettings from "./AppSettings.vue";
 import { ref } from "vue";
+import { useStore } from "vuex";
 import {
   PlugZap,
   MoveUpRight,
@@ -110,50 +111,27 @@ import {
   User,
 } from "lucide-vue-next";
 
+const store = useStore();
+
 const isSettingsOpen = ref(false);
 const isConnectedToServer = ref(false);
 const isStopMoving = ref(true);
 
-const autoAll = ref(true);
-const autoCombat = ref(true);
-const autoHeal = ref(true);
-const autoBless = ref(true);
-const autoGet = ref(true);
-const autoSneak = ref(true);
+const autoAll = computed(() => store.state.playerConfig.autoAll);
+const autoCombat = computed(() => store.state.playerConfig.autoCombat);
+const autoHeal = computed(() => store.state.playerConfig.autoHeal);
+const autoBless = computed(() => store.state.playerConfig.autoBless);
+const autoGet = computed(() => store.state.playerConfig.autoGet);
+const autoSneak = computed(() => store.state.playerConfig.autoSneak);
 
 const toggleSettings = () => {
   isSettingsOpen.value = !isSettingsOpen.value;
 };
 
-const toggleAutoAll = () => {
-  autoAll.value = !autoAll.value;
-  if (autoAll.value) {
-    autoCombat.value = true;
-    autoHeal.value = true;
-    autoBless.value = true;
-    autoGet.value = true;
-    autoSneak.value = true;
-  }
-};
-
 const toggleAutoAction = (actionName) => {
-  switch (actionName) {
-    case "autoCombat":
-      autoCombat.value = !autoCombat.value;
-      break;
-    case "autoHeal":
-      autoHeal.value = !autoHeal.value;
-      break;
-    case "autoBless":
-      autoBless.value = !autoBless.value;
-      break;
-    case "autoGet":
-      autoGet.value = !autoGet.value;
-      break;
-    case "autoSneak":
-      autoSneak.value = !autoSneak.value;
-      break;
-  }
+  store.dispatch("playerConfig/updateConfig", {
+    [actionName]: !store.state.playerConfig[actionName],
+  });
 };
 
 const connectToServer = async () => {
@@ -175,12 +153,11 @@ const connectToServer = async () => {
 }
 
 .icon-container {
-  @apply p-1 m-1 rounded-sm border border-gray-500 hover:border-blue-400 hover:text-gray-200 cursor-pointer;
+  @apply p-1 m-1 rounded-sm border border-zinc-900 hover:border-zinc-400 hover:text-gray-200 cursor-pointer;
 }
 
 .icon-active {
-  @apply border-blue-500;
-  background-color: rgba(212, 243, 255, 0.1);
+  @apply border border-green-500 bg-zinc-700 hover:border-green-600;
 }
 
 .icon-active .icon {
@@ -189,6 +166,10 @@ const connectToServer = async () => {
 
 .icon {
   @apply w-5 h-5;
+}
+
+.settings-button.active {
+  @apply border border-zinc-200 text-gray-200 bg-zinc-700;
 }
 
 .separator {

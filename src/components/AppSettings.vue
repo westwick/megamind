@@ -241,11 +241,11 @@ export default {
 }
 
 .menu-item.active {
-  @apply text-white bg-zinc-800 border-r-0;
+  @apply text-white bg-zinc-800/95 border-r-0;
 }
 
 .content-area {
-  @apply p-4 text-gray-300 w-full bg-zinc-800;
+  @apply p-4 text-gray-300 w-full bg-zinc-800/95;
 }
 
 .content-title {
