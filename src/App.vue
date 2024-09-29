@@ -19,8 +19,8 @@
 </template>
 
 <script setup>
-// import { onMounted } from "vue";
-// import { useStore } from "vuex";
+import { onMounted } from "vue";
+import { useStore } from "vuex";
 import ConversationsComponent from "./components/ConversationsComponent.vue";
 import TopBar from "./components/TopBar.vue";
 import DebugComponent from "./components/DebugComponent.vue";
@@ -30,9 +30,9 @@ const store = useStore();
 
 const inputText = ref("");
 
-// onMounted(() => {
-//   store.dispatch("playerConfig/loadConfig");
-// });
+onMounted(() => {
+  store.dispatch("playerConfig/loadConfig");
+});
 
 const sendData = () => {
   if (inputText.value.trim()) {

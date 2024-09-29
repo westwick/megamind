@@ -93,6 +93,7 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
 import AppSettings from "./AppSettings.vue";
 import { ref } from "vue";
 import { useStore } from "vuex";
