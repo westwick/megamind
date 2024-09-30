@@ -1,3 +1,5 @@
+import playerConfig from "../state/playerConfig";
+
 class CombatHandler {
   constructor(eventBus, commandManager, gameState, playerStats) {
     this.eventBus = eventBus;
@@ -28,10 +30,12 @@ class CombatHandler {
       event.entities &&
       event.entities.length > 0
     ) {
-      const targetEntity = this.findSuitableTarget(event.entities);
-      if (targetEntity) {
-        this.commandManager.sendCommand(`attack ${targetEntity}`);
-        this.gameState.setState({ inCombat: true });
+      if (playerConfig.getConfig().auto.autoCombat) {
+        const targetEntity = this.findSuitableTarget(event.entities);
+        if (targetEntity) {
+          this.commandManager.sendCommand(`attack ${targetEntity}`);
+          this.gameState.setState({ inCombat: true });
+        }
       }
     }
   }
