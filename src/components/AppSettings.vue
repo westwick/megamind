@@ -19,148 +19,7 @@
       </div>
 
       <div v-if="activeTab === 'health'">
-        <div class="flex gap-16">
-          <div class="flex">
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center">
-                <label for="health-input-1" class="settings-label"
-                  >Rest max</label
-                >
-                <input
-                  v-model="healthSettings.restMax"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="health-input-2" class="settings-label"
-                  >Rest if below</label
-                >
-                <input
-                  v-model="healthSettings.restIfBelow"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="health-input-3" class="settings-label"
-                  >Heal (while resting)</label
-                >
-                <input
-                  v-model="healthSettings.healWhileResting"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="health-input-4" class="settings-label"
-                  >Heal (Combat)</label
-                >
-                <input
-                  v-model="healthSettings.healCombat"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="health-input-5" class="settings-label"
-                  >Run if below</label
-                >
-                <input
-                  v-model="healthSettings.runIfBelow"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="health-input-6" class="settings-label"
-                  >Hang if below</label
-                >
-                <input
-                  v-model="healthSettings.hangIfBelow"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="flex-grow">
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center">
-                <label for="mana-input-1" class="settings-label"
-                  >Rest Max</label
-                >
-                <input
-                  v-model="manaSettings.restMax"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="mana-input-2" class="settings-label"
-                  >Rest if below</label
-                >
-                <input
-                  v-model="manaSettings.restIfBelow"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="mana-input-3" class="settings-label"
-                  >Heal (rest)</label
-                >
-                <input
-                  v-model="manaSettings.healRest"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="mana-input-4" class="settings-label"
-                  >Heal (combat)</label
-                >
-                <input
-                  v-model="manaSettings.healCombat"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="mana-input-5" class="settings-label"
-                  >Run if below</label
-                >
-                <input
-                  v-model="manaSettings.runIfBelow"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex items-center">
-                <label for="mana-input-6" class="settings-label"
-                  >Hang if below</label
-                >
-                <input
-                  v-model="manaSettings.hangIfBelow"
-                  type="number"
-                  class="settings-input"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <HealthManaSettings />
       </div>
 
       <div v-if="activeTab === 'combat'">
@@ -196,7 +55,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref } from "vue";
+import HealthManaSettings from "./settings/HealthManaSettings.vue";
 
 const activeTab = ref("general");
 const tabs = [
@@ -208,45 +68,6 @@ const tabs = [
   { id: "pvp", name: "PVP" },
   { id: "cash", name: "Cash" },
 ];
-
-const healthSettings = ref({
-  restMax: 0,
-  restIfBelow: 0,
-  healWhileResting: 0,
-  healCombat: 0,
-  runIfBelow: 0,
-  hangIfBelow: 0,
-});
-
-const manaSettings = ref({
-  restMax: 0,
-  restIfBelow: 0,
-  healRest: 0,
-  healCombat: 0,
-  runIfBelow: 0,
-  hangIfBelow: 0,
-});
-
-watch(
-  healthSettings,
-  (newSettings, oldSettings) => {
-    console.log("Health settings changed:", newSettings);
-    // You can add your API call or state update logic here
-    // For example: saveSettingsToBackend(newSettings);
-  },
-  { deep: true }
-);
-
-// Watch for changes in manaSettings
-watch(
-  manaSettings,
-  (newSettings, oldSettings) => {
-    console.log("Mana settings changed:", newSettings);
-    // You can add your API call or state update logic here
-    // For example: saveSettingsToBackend(newSettings);
-  },
-  { deep: true }
-);
 
 const setActiveTab = (tabId) => {
   activeTab.value = tabId;

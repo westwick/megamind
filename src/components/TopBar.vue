@@ -87,7 +87,7 @@
       </div>
     </div>
     <Transition name="slide">
-      <div v-if="isSettingsOpen" class="settings-area">
+      <div v-show="isSettingsOpen" class="settings-area">
         <AppSettings />
       </div>
     </Transition>
