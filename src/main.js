@@ -145,9 +145,24 @@ ipcMain.handle("get-player-config", () => {
   return playerConfig.getConfig();
 });
 
-ipcMain.on("update-player-config", (event, newConfig) => {
-  playerConfig.updateConfig(newConfig);
+ipcMain.on("update-player-config", (event, section, sectionData) => {
+  playerConfig.updateConfig(section, sectionData);
 });
+
+ipcMain.on("disconnect-from-server", (event) => {
+  console.log("disconnecting from server at " + new Date().toISOString());
+  disconnectFromServer();
+});
+
+function disconnectFromServer() {
+  if (socket) {
+    socket.end(() => {
+      // writeToTerminal("Disconnected from server");
+    });
+    socket = null;
+    currentRoutine = null;
+  }
+}
 
 function initializeGame() {
   currentRoutine = null;

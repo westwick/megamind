@@ -66,6 +66,8 @@ export class LoginAutomator {
   stripAnsi = (str) => str.replace(/\x1B\[[0-9;]*[JKmsu]/g, "");
 
   sendCommand = (command) => {
-    this.telnetSocket.write(command + "\r");
+    if (this.telnetSocket) {
+      this.telnetSocket.write(command + "\r");
+    }
   };
 }

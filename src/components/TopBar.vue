@@ -5,8 +5,10 @@
         <div
           class="icon-container"
           :class="{ 'icon-active': isConnectedToServer }"
-          title="Connect to server"
-          @click="connectToServer"
+          :title="
+            isConnectedToServer ? 'Disconnect from server' : 'Connect to server'
+          "
+          @click="handleConnection"
         >
           <PlugZap class="icon" :fill="isConnectedToServer ? 'yellow' : ''" />
         </div>
@@ -28,7 +30,7 @@
           class="icon-container"
           :class="{ 'icon-active': autoAll }"
           title="Toggle all auto-actions"
-          @click="toggleAutoAll"
+          @click="toggleAutoAction('autoAll')"
         >
           <Power class="icon" fill="rgba(0, 0, 0, 0)" />
         </div>
@@ -118,12 +120,12 @@ const isSettingsOpen = ref(false);
 const isConnectedToServer = ref(false);
 const isStopMoving = ref(true);
 
-const autoAll = computed(() => store.state.playerConfig.autoAll);
-const autoCombat = computed(() => store.state.playerConfig.autoCombat);
-const autoHeal = computed(() => store.state.playerConfig.autoHeal);
-const autoBless = computed(() => store.state.playerConfig.autoBless);
-const autoGet = computed(() => store.state.playerConfig.autoGet);
-const autoSneak = computed(() => store.state.playerConfig.autoSneak);
+const autoAll = computed(() => store.state.playerConfig.auto.autoAll);
+const autoCombat = computed(() => store.state.playerConfig.auto.autoCombat);
+const autoHeal = computed(() => store.state.playerConfig.auto.autoHeal);
+const autoBless = computed(() => store.state.playerConfig.auto.autoBless);
+const autoGet = computed(() => store.state.playerConfig.auto.autoGet);
+const autoSneak = computed(() => store.state.playerConfig.auto.autoSneak);
 
 const toggleSettings = () => {
   isSettingsOpen.value = !isSettingsOpen.value;
@@ -131,17 +133,19 @@ const toggleSettings = () => {
 
 const toggleAutoAction = (actionName) => {
   store.dispatch("playerConfig/updateConfig", {
-    [actionName]: !store.state.playerConfig[actionName],
+    section: "auto",
+    newConfig: { [actionName]: !store.state.playerConfig.auto[actionName] },
   });
 };
 
-const connectToServer = async () => {
-  try {
-    await window.electronAPI.connectToServer();
-    isConnectedToServer.value = true;
-  } catch (error) {
-    console.error("Failed to connect to server:", error);
+const handleConnection = () => {
+  if (isConnectedToServer.value) {
+    console.log("sending disconnect at " + new Date().toISOString());
+    window.electronAPI.disconnectFromServer();
     isConnectedToServer.value = false;
+  } else {
+    window.electronAPI.connectToServer();
+    isConnectedToServer.value = true;
   }
 };
 </script>

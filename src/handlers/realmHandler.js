@@ -1,9 +1,16 @@
 class RealmHandler {
-  constructor(eventBus) {
+  constructor(eventBus, commandManager) {
     this.eventBus = eventBus;
+    this.commandManager = commandManager;
 
     this.eventBus.on("new-message-batch", async (batch) => {
       this.handleWhoCommand(batch.lines, batch.messages);
+    });
+
+    this.eventBus.on("new-message-line", (line) => {
+      if (line.line.includes("The gods have punished you appropriately.")) {
+        this.commandManager.sendCommand("");
+      }
     });
   }
 

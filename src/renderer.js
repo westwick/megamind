@@ -111,11 +111,13 @@ function initTerminal() {
   const terminalElement = document.getElementById("terminal");
 
   term.open(terminalElement);
-  term.write("\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\r\n\x1b[0m");
+  term.write(
+    "\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\x1b[0m\x1b[K\r\n"
+  );
   // fitAddon.fit();
 
   window.electronAPI.onServerConnected(() => {
-    term.write("\x1b[44m\x1b[37m*** Connected to Server ***\r\n\x1b[0m");
+    term.write("\x1b[44m\x1b[37m*** Connected to Server ***\x1b[0m\x1b[K\r\n");
   });
 
   window.electronAPI.onServerData((event) => {
@@ -123,7 +125,9 @@ function initTerminal() {
   });
 
   window.electronAPI.onServerClosed(() => {
-    term.write("\x1b[44m\x1b[37m\r\n*** Connection Closed ***\r\n\x1b[0m");
+    term.write(
+      "\x1b[44m\x1b[37m\r\n*** Connection Closed ***\x1b[0m\x1b[K\r\n"
+    );
   });
 
   window.electronAPI.onServerError((err) => {
@@ -131,7 +135,7 @@ function initTerminal() {
   });
 
   window.electronAPI.onTerminalWrite((event, data) => {
-    term.write(`\x1b[44m\x1b[37m\r\n*** ${data} ***\r\n\x1b[0m`);
+    term.write(`\x1b[44m\x1b[37m\r\n*** ${data} ***\x1b[0m\x1b[K\r\n`);
   });
 
   // Handle user input

@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // server and stuff
   connectToServer: (data) => ipcRenderer.send("connect-to-server", data),
+  disconnectFromServer: () => ipcRenderer.send("disconnect-from-server"),
   onServerConnected: (callback) => ipcRenderer.on("server-connected", callback),
   onServerData: (callback) =>
     ipcRenderer.on("server-data", (event, data) => callback(data)),
@@ -28,6 +29,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // player config
   getPlayerConfig: () => ipcRenderer.invoke("get-player-config"),
-  updatePlayerConfig: (newConfig) =>
-    ipcRenderer.send("update-player-config", newConfig),
+  updatePlayerConfig: (section, sectionData) =>
+    ipcRenderer.send("update-player-config", section, sectionData),
 });

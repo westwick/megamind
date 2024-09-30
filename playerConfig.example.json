@@ -1,8 +1,26 @@
 {
-  "autoAll": true,
-  "autoCombat": true,
-  "autoHeal": true,
-  "autoBless": true,
-  "autoGet": true,
-  "autoSneak": true
+  "auto": {
+    "autoAll": true,
+    "autoCombat": true,
+    "autoHeal": true,
+    "autoBless": true,
+    "autoGet": true,
+    "autoSneak": true
+  },
+  "health": {
+    "restMax": 100,
+    "restIfBelow": 50,
+    "healWhileResting": 10,
+    "healCombat": 10,
+    "runIfBelow": 50,
+    "hangIfBelow": 50
+  },
+  "mana": {
+    "restMax": 100,
+    "restIfBelow": 50,
+    "healWhileResting": 10,
+    "healCombat": 10,
+    "runIfBelow": 50,
+    "hangIfBelow": 50
+  }
 }

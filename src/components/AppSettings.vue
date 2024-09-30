@@ -27,7 +27,7 @@
                   >Rest max</label
                 >
                 <input
-                  id="health-input-1"
+                  v-model="healthSettings.restMax"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -38,7 +38,7 @@
                   >Rest if below</label
                 >
                 <input
-                  id="health-input-2"
+                  v-model="healthSettings.restIfBelow"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -49,7 +49,7 @@
                   >Heal (while resting)</label
                 >
                 <input
-                  id="health-input-3"
+                  v-model="healthSettings.healWhileResting"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -60,7 +60,7 @@
                   >Heal (Combat)</label
                 >
                 <input
-                  id="health-input-4"
+                  v-model="healthSettings.healCombat"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -71,7 +71,7 @@
                   >Run if below</label
                 >
                 <input
-                  id="health-input-5"
+                  v-model="healthSettings.runIfBelow"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -82,7 +82,7 @@
                   >Hang if below</label
                 >
                 <input
-                  id="health-input-6"
+                  v-model="healthSettings.hangIfBelow"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -97,7 +97,7 @@
                   >Rest Max</label
                 >
                 <input
-                  id="mana-input-1"
+                  v-model="manaSettings.restMax"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -108,7 +108,7 @@
                   >Rest if below</label
                 >
                 <input
-                  id="mana-input-2"
+                  v-model="manaSettings.restIfBelow"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -119,7 +119,7 @@
                   >Heal (rest)</label
                 >
                 <input
-                  id="mana-input-3"
+                  v-model="manaSettings.healRest"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -130,7 +130,7 @@
                   >Heal (combat)</label
                 >
                 <input
-                  id="mana-input-4"
+                  v-model="manaSettings.healCombat"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -141,7 +141,7 @@
                   >Run if below</label
                 >
                 <input
-                  id="mana-input-5"
+                  v-model="manaSettings.runIfBelow"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -152,7 +152,7 @@
                   >Hang if below</label
                 >
                 <input
-                  id="mana-input-6"
+                  v-model="manaSettings.hangIfBelow"
                   type="number"
                   class="settings-input"
                   placeholder="0"
@@ -195,33 +195,61 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      activeTab: "general",
-      tabs: [
-        { id: "general", name: "General" },
-        { id: "health", name: "Health & Mana" },
-        { id: "combat", name: "Combat" },
-        { id: "spells", name: "Spells" },
-        { id: "party", name: "Party" },
-        { id: "pvp", name: "PVP" },
-        { id: "cash", name: "Cash" },
-      ],
-    };
+<script setup>
+import { ref, computed, watch } from "vue";
+
+const activeTab = ref("general");
+const tabs = [
+  { id: "general", name: "General" },
+  { id: "health", name: "Health & Mana" },
+  { id: "combat", name: "Combat" },
+  { id: "spells", name: "Spells" },
+  { id: "party", name: "Party" },
+  { id: "pvp", name: "PVP" },
+  { id: "cash", name: "Cash" },
+];
+
+const healthSettings = ref({
+  restMax: 0,
+  restIfBelow: 0,
+  healWhileResting: 0,
+  healCombat: 0,
+  runIfBelow: 0,
+  hangIfBelow: 0,
+});
+
+const manaSettings = ref({
+  restMax: 0,
+  restIfBelow: 0,
+  healRest: 0,
+  healCombat: 0,
+  runIfBelow: 0,
+  hangIfBelow: 0,
+});
+
+watch(
+  healthSettings,
+  (newSettings, oldSettings) => {
+    console.log("Health settings changed:", newSettings);
+    // You can add your API call or state update logic here
+    // For example: saveSettingsToBackend(newSettings);
   },
-  computed: {
-    activeTabName() {
-      const activeTab = this.tabs.find((tab) => tab.id === this.activeTab);
-      return activeTab ? activeTab.name : "";
-    },
+  { deep: true }
+);
+
+// Watch for changes in manaSettings
+watch(
+  manaSettings,
+  (newSettings, oldSettings) => {
+    console.log("Mana settings changed:", newSettings);
+    // You can add your API call or state update logic here
+    // For example: saveSettingsToBackend(newSettings);
   },
-  methods: {
-    setActiveTab(tabId) {
-      this.activeTab = tabId;
-    },
-  },
+  { deep: true }
+);
+
+const setActiveTab = (tabId) => {
+  activeTab.value = tabId;
 };
 </script>
 

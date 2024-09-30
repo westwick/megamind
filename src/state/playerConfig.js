@@ -17,7 +17,6 @@ class PlayerConfig {
     } catch (error) {
       console.error("Error loading player config:", error);
     }
-    return this.getDefaultConfig();
   }
 
   saveConfig() {
@@ -28,19 +27,12 @@ class PlayerConfig {
     }
   }
 
-  getDefaultConfig() {
-    return {
-      autoAll: true,
-      autoCombat: true,
-      autoHeal: true,
-      autoBless: true,
-      autoGet: true,
-      autoSneak: true,
-    };
-  }
-
-  updateConfig(newConfig) {
-    this.config = { ...this.config, ...newConfig };
+  updateConfig(section, sectionData) {
+    console.log("updating config", section, sectionData);
+    if (!this.config[section]) {
+      this.config[section] = {};
+    }
+    this.config[section] = { ...this.config[section], ...sectionData };
     this.saveConfig();
   }
 

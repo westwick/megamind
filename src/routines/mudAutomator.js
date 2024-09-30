@@ -22,7 +22,7 @@ export class MudAutomator {
 
     this.roomHandler = new RoomHandler(this.eventBus, this.commandManager);
     this.conversationHandler = new ConversationHandler(this.eventBus);
-    this.realmHandler = new RealmHandler(this.eventBus);
+    this.realmHandler = new RealmHandler(this.eventBus, this.commandManager);
     this.combatHandler = new CombatHandler(
       this.eventBus,
       this.commandManager,
