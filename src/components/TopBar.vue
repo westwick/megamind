@@ -17,7 +17,7 @@
           class="icon-container"
           :class="{ 'icon-disabled': !autoAll }"
           title="Go to location"
-          @click="autoAll && handleGoToLocation"
+          @click="autoAll ? handleGoToLocation() : null"
         >
           <MoveUpRight class="icon" fill="" />
         </div>
@@ -25,7 +25,7 @@
           class="icon-container"
           :class="{ 'icon-disabled': !autoAll }"
           title="Loop an area"
-          @click="autoAll && handleLoopArea"
+          @click="autoAll ? handleLoopArea() : null"
         >
           <Repeat class="icon" fill="" />
         </div>
@@ -33,7 +33,7 @@
           class="icon-container"
           :class="{ 'icon-disabled': !autoAll }"
           title="Step backwards"
-          @click="autoAll && handleStepBackwards"
+          @click="autoAll ? handleStepBackwards() : null"
         >
           <UndoDot class="icon" fill="" />
         </div>
@@ -41,7 +41,7 @@
           class="icon-container icon-active"
           :class="{ 'icon-disabled': !autoAll }"
           title="Stop moving"
-          @click="autoAll && handleStopMoving"
+          @click="autoAll ? handleStopMoving() : null"
         >
           <Octagon class="icon" fill="rgba(100, 0, 0, 0.2)" />
         </div>
