@@ -13,22 +13,45 @@
           <PlugZap class="icon" :fill="isConnectedToServer ? 'yellow' : ''" />
         </div>
         <div class="separator"></div>
-        <div class="icon-container" title="Go to location">
+        <div
+          class="icon-container"
+          :class="{ 'icon-disabled': !autoAll }"
+          title="Go to location"
+          @click="autoAll && handleGoToLocation"
+        >
           <MoveUpRight class="icon" fill="" />
         </div>
-        <div class="icon-container" title="Loop an area">
+        <div
+          class="icon-container"
+          :class="{ 'icon-disabled': !autoAll }"
+          title="Loop an area"
+          @click="autoAll && handleLoopArea"
+        >
           <Repeat class="icon" fill="" />
         </div>
-        <div class="icon-container" title="Step backwards">
+        <div
+          class="icon-container"
+          :class="{ 'icon-disabled': !autoAll }"
+          title="Step backwards"
+          @click="autoAll && handleStepBackwards"
+        >
           <UndoDot class="icon" fill="" />
         </div>
-        <div class="icon-container icon-active" title="Stop moving">
+        <div
+          class="icon-container icon-active"
+          :class="{ 'icon-disabled': !autoAll }"
+          title="Stop moving"
+          @click="autoAll && handleStopMoving"
+        >
           <Octagon class="icon" fill="rgba(100, 0, 0, 0.2)" />
         </div>
         <div class="separator"></div>
         <div
           class="icon-container"
-          :class="{ 'icon-active': autoAll }"
+          :class="{
+            'icon-active': autoAll,
+            'icon-active-red': !autoAll,
+          }"
           title="Toggle all auto-actions"
           @click="toggleAutoAction('autoAll')"
         >
@@ -36,41 +59,41 @@
         </div>
         <div
           class="icon-container"
-          :class="{ 'icon-active': autoCombat }"
+          :class="{ 'icon-active': autoCombat, 'icon-disabled': !autoAll }"
           title="Auto-Combat"
-          @click="toggleAutoAction('autoCombat')"
+          @click="autoAll && toggleAutoAction('autoCombat')"
         >
           <Swords class="icon" :fill="autoCombat ? 'red' : ''" />
         </div>
         <div
           class="icon-container"
-          :class="{ 'icon-active': autoHeal }"
+          :class="{ 'icon-active': autoHeal, 'icon-disabled': !autoAll }"
           title="Auto-Heal/Rest"
-          @click="toggleAutoAction('autoHeal')"
+          @click="autoAll && toggleAutoAction('autoHeal')"
         >
           <Cross class="icon" :fill="autoHeal ? 'green' : ''" />
         </div>
         <div
           class="icon-container"
-          :class="{ 'icon-active': autoBless }"
+          :class="{ 'icon-active': autoBless, 'icon-disabled': !autoAll }"
           title="Auto-Bless"
-          @click="toggleAutoAction('autoBless')"
+          @click="autoAll && toggleAutoAction('autoBless')"
         >
           <Sparkles class="icon" :fill="autoBless ? 'blue' : ''" />
         </div>
         <div
           class="icon-container"
-          :class="{ 'icon-active': autoGet }"
+          :class="{ 'icon-active': autoGet, 'icon-disabled': !autoAll }"
           title="Auto-Get"
-          @click="toggleAutoAction('autoGet')"
+          @click="autoAll && toggleAutoAction('autoGet')"
         >
           <Hand class="icon" fill="rgba(100, 100, 0, 0.8)" />
         </div>
         <div
           class="icon-container"
-          :class="{ 'icon-active': autoSneak }"
+          :class="{ 'icon-active': autoSneak, 'icon-disabled': !autoAll }"
           title="Auto-Sneak"
-          @click="toggleAutoAction('autoSneak')"
+          @click="autoAll && toggleAutoAction('autoSneak')"
         >
           <Footprints class="icon" :fill="autoSneak ? 'purple' : ''" />
         </div>
@@ -148,6 +171,26 @@ const handleConnection = () => {
     isConnectedToServer.value = true;
   }
 };
+
+const handleGoToLocation = () => {
+  // Implement the go to location functionality
+  console.log("Go to location clicked");
+};
+
+const handleLoopArea = () => {
+  // Implement the loop area functionality
+  console.log("Loop area clicked");
+};
+
+const handleStepBackwards = () => {
+  // Implement the step backwards functionality
+  console.log("Step backwards clicked");
+};
+
+const handleStopMoving = () => {
+  // Implement the stop moving functionality
+  console.log("Stop moving clicked");
+};
 </script>
 
 <style scoped>
@@ -203,5 +246,21 @@ const handleConnection = () => {
 .slide-leave-to {
   transform: translateY(-100%);
   opacity: 0;
+}
+
+.icon-disabled {
+  @apply opacity-30 cursor-not-allowed;
+}
+
+.icon-disabled:hover {
+  @apply border-zinc-900 text-gray-400;
+}
+
+.icon-active-red {
+  @apply border-red-500 bg-zinc-700 hover:border-red-600;
+}
+
+.icon-active-red .icon {
+  @apply text-red-500;
 }
 </style>

@@ -1,3 +1,6 @@
+import playerConfig from "../state/playerConfig";
+import { writeToTerminal } from "../main";
+
 export class LoginAutomator {
   constructor(gameState, telnetSocket, onLoginComplete, username, password) {
     this.gameState = gameState;
@@ -48,8 +51,15 @@ export class LoginAutomator {
 
   handleGameEntry = (lastLine) => {
     if (lastLine.includes("[MAJORMUD]:")) {
-      this.sendCommand("enter");
-      this.gameState.setState({ hasEnteredGame: true });
+      const config = playerConfig.getConfig();
+
+      // Check if auto section exists and autoAll is true
+      if (config.auto.autoAll === true) {
+        this.sendCommand("enter");
+        this.gameState.setState({ hasEnteredGame: true });
+      } else {
+        writeToTerminal("AutoAll is not enabled. Waiting for manual entry.");
+      }
     }
   };
 
