@@ -222,42 +222,35 @@ class ConversationHandler {
     if (
       event.message &&
       event.message.spans &&
-      event.message.spans.length > 0
+      event.message.spans.length === 1
     ) {
       let fullMessage = event.line;
-      // Strip out the status line if present
-      const statusLineIndex = fullMessage.indexOf("]:");
-      if (statusLineIndex !== -1) {
-        fullMessage = fullMessage.substring(statusLineIndex + 2).trim();
+
+      const span = event.message.spans[0];
+
+      const enterLeavePattern = /^(\w+) just (entered|left) the Realm\.$/;
+      const disconnectPattern = /^(\w+) just (disconnected!!!|hung up!!!)$/;
+
+      let match = fullMessage.match(enterLeavePattern);
+      if (match) {
+        const [, username, action] = match;
+        this.emitConversationEvent({
+          type: action === "entered" ? "realm_enter" : "realm_leave",
+          username: username,
+        });
+        return;
       }
 
-      const span = event.message.spans[event.message.spans.length - 1]; // Use the last span
-
-      if (span.color && span.color.name === "lightGray") {
-        const enterLeavePattern = /^(\w+) just (entered|left) the Realm\.$/;
-        const disconnectPattern = /^(\w+) just (disconnected!!!|hung up!!!)$/;
-
-        let match = fullMessage.match(enterLeavePattern);
+      if (span.color && span.color.bright) {
+        match = fullMessage.match(disconnectPattern);
         if (match) {
           const [, username, action] = match;
           this.emitConversationEvent({
-            type: action === "entered" ? "realm_enter" : "realm_leave",
+            type: "realm_disconnect",
             username: username,
+            action: action === "disconnected!!!" ? "disconnected" : "hung_up",
           });
           return;
-        }
-
-        if (span.color.bright) {
-          match = fullMessage.match(disconnectPattern);
-          if (match) {
-            const [, username, action] = match;
-            this.emitConversationEvent({
-              type: "realm_disconnect",
-              username: username,
-              action: action === "disconnected!!!" ? "disconnected" : "hung_up",
-            });
-            return;
-          }
         }
       }
     }
