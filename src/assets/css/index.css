@@ -20,10 +20,8 @@ body {
   font-weight: normal !important;
 }
 
-#font-loader {
-  font-family: "perfect_dos_vga_437regular";
-  height: 1px;
-  opacity: 0.001;
+.xterm-dom-renderer-owner-1 .xterm-rows {
+  background-color: #000;
 }
 
 ::-webkit-scrollbar {

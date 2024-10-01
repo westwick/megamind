@@ -4,3 +4,10 @@
   font-weight: normal;
   font-style: normal;
 }
+
+@font-face {
+  font-family: "perfect_dos_vga_437regular";
+  src: url("../fonts/PerfectDOSVGA437Win.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
