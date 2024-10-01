@@ -8,8 +8,6 @@ export class GameState {
     this.inCombat = false;
     this.onlineUsers = [];
     this.player = {
-      healthMax: 37,
-      manaMax: 24,
       health: 0,
       mana: 0,
     };

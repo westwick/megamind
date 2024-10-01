@@ -22,5 +22,14 @@
     "healCombat": 10,
     "runIfBelow": 50,
     "hangIfBelow": 50
+  },
+  "stats": {
+    "lastUpdated": null,
+    "maxHealth": null,
+    "maxMana": null,
+    "race": null,
+    "class": null,
+    "level": null,
+    "lives": null
   }
 }

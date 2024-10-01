@@ -75,12 +75,12 @@ class RoomHandler {
     // Update room name
     if (
       message.spans &&
-      message.spans.length == 2 &&
-      message.spans[1].color &&
-      message.spans[1].color.bright &&
-      message.spans[1].color.name === "cyan"
+      message.spans.length == 1 &&
+      message.spans[0].color &&
+      message.spans[0].color.bright &&
+      message.spans[0].color.name === "cyan"
     ) {
-      this.eventBus.emit("new-room-name", message.spans[1].text);
+      this.eventBus.emit("new-room-name", message.spans[0].text);
     }
   };
 
@@ -111,7 +111,7 @@ class RoomHandler {
       const entitiesPart = event.line.split("Also here:")[1].trim();
 
       const entities = entitiesPart
-        .split(",")
+        .split(", ")
         .filter((entity) => entity !== "");
 
       // delete the trailing period from the last entity

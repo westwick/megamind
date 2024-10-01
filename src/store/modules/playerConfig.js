@@ -23,6 +23,15 @@ const state = {
     runIfBelow: 0,
     hangIfBelow: 0,
   },
+  stats: {
+    lastUpdated: null,
+    maxHealth: null,
+    maxMana: null,
+    race: null,
+    class: null,
+    level: null,
+    lives: null,
+  },
 };
 
 const mutations = {

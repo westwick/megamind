@@ -102,7 +102,18 @@ ipcMain.on("connect-to-server", (event) => {
   });
 
   socket.on("data", (data) => {
-    const transformedData = iconv.decode(data, "cp437");
+    let transformedData = iconv.decode(data, "cp437");
+
+    // insert cursor reset to top after clear screen
+    // this is how older terminals behaved
+    // fixes alignment issue for the "train stats" screen so content is always at top
+    if (transformedData.includes("\x1b[2J")) {
+      transformedData = transformedData.replace(
+        "\x1b[2J",
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\x1b[2J\x1b[H"
+      );
+    }
+
     const dataEvent = {
       dataRaw: data,
       dataTransformed: transformedData,

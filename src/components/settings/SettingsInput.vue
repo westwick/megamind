@@ -11,6 +11,7 @@
       min="0"
       max="100"
     />
+    <slot name="append"></slot>
   </div>
 </template>
 
@@ -27,7 +28,7 @@ const id = `settings-input-${props.label.toLowerCase().replace(/\s+/g, "-")}`;
 
 <style scoped>
 .settings-input {
-  @apply w-20 bg-zinc-700 text-gray-200 rounded-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500;
+  @apply w-16 bg-zinc-700 text-gray-200 rounded-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500;
 }
 
 .settings-label {

@@ -1,4 +1,7 @@
+import { ipcMain } from "electron";
 import HealingStrategy from "../strategies/HealingStrategy";
+import playerConfig from "../state/playerConfig";
+import { writeToTerminal } from "../main";
 
 class HealthHandler {
   constructor(eventBus, commandManager, gameState, playerStats) {
@@ -9,7 +12,19 @@ class HealthHandler {
     this.currentStrategy = null;
 
     this.eventBus.on("new-message-line", (event) => {
-      this.handleHealth(event.line);
+      console.log(
+        "new-message-line",
+        event.line,
+        event.message.spans.length
+        // JSON.stringify(event.message, null, 2)
+        // event.message.spans.map((span) => span.text).join(" | ")
+      );
+      // this.handleHealth(event.line);
+    });
+
+    this.eventBus.on("new-statline-update", (event) => {
+      // console.log("new-statline-update", event);
+      this.handleHealth(event);
     });
 
     this.eventBus.on("health-update", (event) => {
@@ -17,31 +32,41 @@ class HealthHandler {
     });
   }
 
-  handleHealth(line) {
-    const statsMatch = line.match(/\[HP=(\d+)\/MA=(\d+)\]:/);
-    if (statsMatch) {
-      const hp = parseInt(statsMatch[1], 10);
-      const ma = parseInt(statsMatch[2], 10);
+  handleHealth(event) {
+    const { currentHealth, currentMana, resting, meditating } = event;
 
-      // Check if health or mana has changed
-      if (
-        hp !== this.gameState.player.health ||
-        ma !== this.gameState.player.mana
-      ) {
-        this.gameState.setState({
-          player: {
-            ...this.gameState.player,
-            health: hp,
-            mana: ma,
-          },
-        });
-        this.handleHealthUpdate(hp, ma);
-        this.eventBus.emit("health-update", this.gameState.player);
-      }
+    // Check if health or mana has changed
+    if (
+      currentHealth !== this.gameState.player.health ||
+      currentMana !== this.gameState.player.mana
+    ) {
+      this.gameState.setState({
+        player: {
+          ...this.gameState.player,
+          health: currentHealth,
+          mana: currentMana,
+        },
+      });
+      this.handleHealthUpdate(currentHealth, currentMana);
+      this.eventBus.emit("health-update", this.gameState.player);
     }
   }
 
   async handleHealthUpdate(health, mana) {
+    const config = playerConfig.getConfig();
+    const maxHealth = config.stats.maxHealth;
+    const hangIfBelowPercentage = config.health.hangIfBelow;
+    const hangIfBelowValue = Math.floor(
+      maxHealth * (hangIfBelowPercentage / 100)
+    );
+    if (health <= hangIfBelowValue) {
+      ipcMain.emit("disconnect-from-server");
+      writeToTerminal("Low Health Detected!!");
+    } else if (health <= config.health.runIfBelow) {
+      // this.commandManager.send("run");
+    }
+
+    // this should be healing strategy
     if (this.currentStrategy) {
       // If we're already executing a strategy, don't do anything
       return;
