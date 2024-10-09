@@ -91,6 +91,7 @@ function initTerminal() {
       black: "#000000",
       blue: "#0026c3",
       brightBlue: "#007bff",
+      red: "#b10a0a",
       brightRed: "#ff0000",
       brightGreen: "#00ff00",
       brightYellow: "#ffff00",

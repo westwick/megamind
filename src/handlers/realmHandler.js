@@ -40,12 +40,12 @@ class RealmHandler {
 
           const playerParts = line.split("  ");
           const actualParts = playerParts.filter((part) => part.trim() !== "");
-          const title = actualParts[0];
+          const title = actualParts[0].trim();
           const nameParts = actualParts[1].trim().split(" ");
-          const firstName = nameParts[0];
-          const lastName = nameParts[1];
-          const align = actualParts[2];
-          const gang = actualParts[3];
+          const firstName = nameParts[0].trim();
+          const lastName = nameParts[1].trim();
+          const align = actualParts[2].trim();
+          const gang = actualParts[3].trim();
 
           return {
             title: title,

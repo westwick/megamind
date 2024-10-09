@@ -1,7 +1,7 @@
-const fs = require("fs");
-const zlib = require("zlib");
-const readline = require("readline");
-const path = require("path");
+import fs from "fs";
+import zlib from "zlib";
+import readline from "readline";
+import path from "path";
 
 async function detectEncoding(stream) {
   return new Promise((resolve) => {
@@ -26,7 +26,7 @@ async function createReadStream(filePath) {
   return fileStream;
 }
 
-async function readJsonLinesFile(filePath) {
+export async function readJsonLinesFile(filePath) {
   const stream = await createReadStream(filePath);
   const encoding = await detectEncoding(stream);
 
@@ -54,4 +54,4 @@ async function readJsonLinesFile(filePath) {
   return jsonLines;
 }
 
-module.exports = readJsonLinesFile;
+export default readJsonLinesFile;

@@ -26,31 +26,32 @@ class ConversationHandler {
   }
 
   checkForTelepath = (event) => {
-    if (event.message && event.message.spans) {
-      for (let i = 0; i < event.message.spans.length - 1; i++) {
-        const currentSpan = event.message.spans[i];
-        const nextSpan = event.message.spans[i + 1];
+    if (
+      event.message &&
+      event.message.spans &&
+      event.message.spans.length === 2
+    ) {
+      const currentSpan = event.message.spans[0];
+      const nextSpan = event.message.spans[1];
 
-        if (
-          currentSpan.color &&
-          currentSpan.color.name === "green" &&
-          !currentSpan.color.bright &&
-          nextSpan.color &&
-          nextSpan.color.name === "lightGray" &&
-          !nextSpan.color.bright
-        ) {
-          const telepathRegex = /(\w+) telepaths: (.*)$/;
-          const match = currentSpan.text.match(telepathRegex);
-          if (match) {
-            const [, sender, partialMessage] = match;
-            const fullMessage = (partialMessage + nextSpan.text).trim();
-            this.emitConversationEvent({
-              type: "telepath",
-              sender,
-              message: fullMessage,
-            });
-            return; // Exit after finding a match
-          }
+      if (
+        currentSpan.color &&
+        currentSpan.color.name === "green" &&
+        !currentSpan.color.bright &&
+        nextSpan.color &&
+        nextSpan.color.name === "lightGray" &&
+        !nextSpan.color.bright
+      ) {
+        const telepathRegex = /(\w+) telepaths:(.*)$/;
+        const match = currentSpan.text.match(telepathRegex);
+        if (match) {
+          const [, sender, partialMessage] = match;
+          const fullMessage = (partialMessage + nextSpan.text).trim();
+          this.emitConversationEvent({
+            type: "telepath",
+            sender,
+            message: fullMessage,
+          });
         }
       }
     }
@@ -93,20 +94,13 @@ class ConversationHandler {
       event.message.spans &&
       event.message.spans.length > 0
     ) {
-      const relevantSpans = event.message.spans.filter(
-        (span) =>
-          (span.color &&
-            span.color.name === "lightGray" &&
-            (span.text.includes("gossips:") ||
-              span.text.includes("auctions:"))) ||
-          (span.color && span.color.name === "magenta")
-      );
-
-      if (relevantSpans.length >= 2) {
-        const cleanMessage = event.line.split("]:").pop().trim();
-        const match = cleanMessage.match(
-          /^(\w+)\s+(gossips|auctions):\s+(.+)$/
-        );
+      if (
+        (event.message.spans[0].text.includes("gossips:") ||
+          event.message.spans[0].text.includes("auctions:")) &&
+        event.message.spans[1].color.name === "magenta"
+      ) {
+        const cleanMessage = event.line;
+        const match = cleanMessage.match(/^(\w+)\s+(gossips|auctions):(.+)$/);
 
         if (match) {
           const [, username, type, message] = match;
@@ -136,9 +130,8 @@ class ConversationHandler {
           (span.color && span.color.name === "yellow" && !span.color.bright)
       );
 
-      if (gangpathSpans.length >= 2) {
-        const cleanMessage = event.line.split("]:").pop().trim();
-        const [senderPart, messagePart] = cleanMessage.split(" gangpaths: ");
+      if (gangpathSpans.length === 2) {
+        const [senderPart, messagePart] = event.line.split(" gangpaths: ");
 
         if (senderPart && messagePart) {
           const username = senderPart.trim();

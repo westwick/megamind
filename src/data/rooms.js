@@ -1,8 +1,8 @@
-const readJsonLinesFile = require("./dataImport");
+import { readJsonLinesFile } from "./dataImport";
 
 class Room {
   constructor(data) {
-    this.Id = data["Map Number"] + "/" + data["Room Number"];
+    this.Id = `${data["Map Number"]}/${data["Room Number"]}`;
     this.MapNumber = data["Map Number"];
     this.RoomNumber = data["Room Number"];
     this.Name = data.Name;
@@ -21,11 +21,11 @@ class Room {
     this.RawJSON = JSON.stringify(data);
 
     // uncomment this to see all the data but dont leave it checked in to save memory
-    //Object.assign(this, data);
+    // Object.assign(this, data);
   }
 }
 
-function parseExit(exit) {
+const parseExit = (exit) => {
   if (exit === "0") {
     return {};
   }
@@ -39,7 +39,7 @@ function parseExit(exit) {
     RoomNumber: roomNumber,
     Door: hasDoor ? DoorDetails : {},
   };
-}
+};
 
 class RoomLookup {
   constructor() {
@@ -52,21 +52,35 @@ class RoomLookup {
     const roomData = await readJsonLinesFile(filepath);
     roomData.forEach((data) => {
       const room = new Room(data);
-      this.rooms[data["Map Number"] + "/" + data["Room Number"]] = room;
+      this.rooms[`${data["Map Number"]}/${data["Room Number"]}`] = room;
 
       if (!this.mapRoomToId[data["Map Number"]]) {
         this.mapRoomToId[data["Map Number"]] = {};
       }
-      this.mapRoomToId[data["Map Number"]][data["Room Number"]] =
-        data["Map Number"] + "/" + data["Room Number"];
+      this.mapRoomToId[data["Map Number"]][
+        data["Room Number"]
+      ] = `${data["Map Number"]}/${data["Room Number"]}`;
 
       if (!this.nameToMapRoom[data.Name]) {
         this.nameToMapRoom[data.Name] = [];
       }
       this.nameToMapRoom[data.Name].push({
-        RoomId: data["Map Number"] + "/" + data["Room Number"],
+        RoomName: data.Name,
+        RoomId: `${data["Map Number"]}/${data["Room Number"]}`,
         MapNumber: data["Map Number"],
         RoomNumber: data["Room Number"],
+        Exits: {
+          N: parseExit(data.N),
+          S: parseExit(data.S),
+          E: parseExit(data.E),
+          W: parseExit(data.W),
+          NE: parseExit(data.NE),
+          NW: parseExit(data.NW),
+          SE: parseExit(data.SE),
+          SW: parseExit(data.SW),
+          U: parseExit(data.U),
+          D: parseExit(data.D),
+        },
       });
     });
   }
@@ -85,10 +99,10 @@ class RoomLookup {
   }
 
   getRoomsByNameAndExits(name, exits) {
-    var candidateRooms = this.getRoomsByName(name);
+    const candidateRooms = this.getRoomsByName(name);
     // TODO: filter candidateRooms by exits
     return candidateRooms || [];
   }
 }
 
-module.exports = { Room, RoomLookup };
+export { Room, RoomLookup };

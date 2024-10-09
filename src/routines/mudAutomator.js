@@ -117,7 +117,7 @@ export class MudAutomator {
           span.text = span.text.replace("]:", "");
           span.text = span.text.replace("(Resting)", "");
           span.text = span.text.replace("(Meditating)", "");
-          span.text = span.text.trim();
+          // span.text = span.text.trim();
           realSpans.push(span);
         });
         line.spans = realSpans;
@@ -129,6 +129,7 @@ export class MudAutomator {
   };
 
   processMessage = (messages) => {
+    const timestamp = Date.now(); // Get current timestamp
     const lines = messages.flatMap((msg) => {
       if (msg && msg.spans && msg.spans.length > 0) {
         const strippedSpans = msg.spans.map((x) => strip(x.text));
@@ -136,6 +137,7 @@ export class MudAutomator {
         this.eventBus.emit("new-message-line", {
           line: line,
           message: msg,
+          timestamp: timestamp, // Add timestamp to the event
         });
         return line;
       }
@@ -146,6 +148,7 @@ export class MudAutomator {
     this.eventBus.emit("new-message-batch", {
       lines: lines,
       messages: messages,
+      timestamp: timestamp, // Add timestamp to the batch event as well
     });
   };
 
