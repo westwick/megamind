@@ -6,9 +6,9 @@ Megamind is an electron-based app to replace Megamud (for scripting MajorMUD) wi
 * Improve/fix all the annoying things about Megamud
 * Add new features and functionality previously unavailable, specifically:
   * Enhanced pathfinding (remove/reduce the need for paths)
-  * Real-time combat analysis and decision making
   * Improved healing and resource management (blesses)
   * Modern UI with improved conversation tracking
+  * Auto-updating map UI based on realtime game data
 
 ## Getting Started
 
