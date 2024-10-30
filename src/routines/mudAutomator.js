@@ -6,6 +6,7 @@ import CombatHandler from "../handlers/combatHandler";
 import HealthHandler from "../handlers/healthHandler";
 import StatsHandler from "../handlers/statsHandler";
 import CommandManager from "./commandManager";
+import { classifyLine, classifyBatch } from "./classifyIncomingText";
 
 export class MudAutomator {
   constructor(telnetSocket, gameState, playerStats, eventBus) {
@@ -134,6 +135,15 @@ export class MudAutomator {
       if (msg && msg.spans && msg.spans.length > 0) {
         const strippedSpans = msg.spans.map((x) => strip(x.text));
         const line = strippedSpans.join("");
+        // new hotness
+        classifiedLine = classifyLine(line, msg);
+        this.eventBus.emit(classified.label, {
+          line: line,
+          message: msg,
+          match: classified.match ? classified.match : null,
+          timestamp: timestamp, // Add timestamp to the event
+        });
+        // old and busted deprecated event, will be removed before PR
         this.eventBus.emit("new-message-line", {
           line: line,
           message: msg,
@@ -145,6 +155,13 @@ export class MudAutomator {
     });
 
     // Process the entire message for the 'who' command output or similar
+    this.eventBus.emit(classifyBatch(lines, messages), {
+      lines: lines,
+      messages: messages,
+      timestamp: timestamp,
+    });
+
+    // old n busted deprecated event, will be removed before PR
     this.eventBus.emit("new-message-batch", {
       lines: lines,
       messages: messages,
