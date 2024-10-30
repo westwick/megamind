@@ -113,6 +113,58 @@ function initTerminal() {
   // Initialize the terminal in the 'terminal' div
   const terminalElement = document.getElementById("terminal");
 
+  term.attachCustomKeyEventHandler((event) => {
+    if (
+      (event.type === "keydown" || event.type === "keypress") &&
+      event.code.startsWith("Numpad")
+    ) {
+      const numpadKey = event.code.replace("Numpad", "");
+      let command = "";
+
+      switch (numpadKey) {
+        case "8":
+          command = "n";
+          break;
+        case "2":
+          command = "s";
+          break;
+        case "4":
+          command = "w";
+          break;
+        case "6":
+          command = "e";
+          break;
+        case "7":
+          command = "nw";
+          break;
+        case "9":
+          command = "ne";
+          break;
+        case "1":
+          command = "sw";
+          break;
+        case "3":
+          command = "se";
+          break;
+        case "5":
+          command = "look";
+          break;
+        default:
+          return true;
+      }
+
+      if (event.type === "keydown") {
+        window.electronAPI.sendData(command + "\r");
+      }
+      return false;
+    }
+    return true;
+  });
+
+  term.onData((data) => {
+    window.electronAPI.sendData(data);
+  });
+
   term.open(terminalElement);
   term.write(
     "\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\x1b[0m\x1b[K\r\n"
@@ -139,11 +191,6 @@ function initTerminal() {
 
   window.electronAPI.onTerminalWrite((event, data) => {
     term.write(`\x1b[44m\x1b[37m\r\n*** ${data} ***\x1b[0m\x1b[K\r\n`);
-  });
-
-  // Handle user input
-  term.onData((data) => {
-    window.electronAPI.sendData(data);
   });
 
   return term;
