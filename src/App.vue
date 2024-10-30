@@ -1,5 +1,5 @@
 <template>
-  <div id="main-container" @keydown="handleKeydown" tabindex="0">
+  <div id="main-container">
     <TopBar />
     <div class="flex w-full">
       <div id="terminal"></div>

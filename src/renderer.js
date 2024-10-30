@@ -113,9 +113,6 @@ function initTerminal() {
   // Initialize the terminal in the 'terminal' div
   const terminalElement = document.getElementById("terminal");
 
-  // Track if the last key was a handled numpad key
-  let isHandledNumpadKey = false;
-
   term.attachCustomKeyEventHandler((event) => {
     if (
       (event.type === "keydown" || event.type === "keypress") &&
@@ -164,7 +161,6 @@ function initTerminal() {
     return true;
   });
 
-  // Keep the onData handler simple
   term.onData((data) => {
     window.electronAPI.sendData(data);
   });
