@@ -9,7 +9,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "echo \"No linting configured\""
+    "lint": "echo \"No linting configured\"",
+    "test": "vitest"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.5.0",
@@ -26,7 +27,8 @@
     "electron": "32.1.2",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
-    "vite": "^5.4.7"
+    "vite": "^5.4.7",
+    "vitest": "^2.1.4"
   },
   "keywords": [],
   "author": {
@@ -35,6 +37,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "ajv": "^8.17.1",
     "ansicolor": "^2.0.3",
     "electron-squirrel-startup": "^1.0.1",
     "iconv-lite": "^0.6.3",
