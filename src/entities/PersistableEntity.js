@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -8,13 +9,17 @@ const __dirname = dirname(__filename);
 import Datastore from '@seald-io/nedb';
 import "../util/Extensions.js";
 import PersistableProperty from './PersistableProperty.js';
-//import Configuration from '../Utilities/Configuration.js';
+import Configuration from '../state/newConfig.js';
 
-//const config = new Configuration('shift.yaml');
+const config = new Configuration('megamind.yaml');
 
 /**
  * Base class for Entities that allow persisting to NeDB storage
  * This is not meant to be used directly but only inherited.
+ * 
+ * Note: Entities are not persisted until the save() method is called which is done automatically
+ * if the saveTimer is greater than 0.
+ *
  * @template T
  * @class PersistableEntity
  * @example
@@ -24,7 +29,8 @@ import PersistableProperty from './PersistableProperty.js';
  * }
  * 
  * const user = await User.new('soul');
- * user.IP = '127.0.0.1'; // persisted right away
+ * user.IP = '127.0.0.1'; // saves in one second unless
+ * user.save(); // saves immediately
  * 
  * user.transaction();
  * try {
@@ -40,23 +46,46 @@ import PersistableProperty from './PersistableProperty.js';
  */
 export default class PersistableEntity {
     static datastore = {};
-
-    get Key() { return this.id; } 
-
-    set Key(value) { 
-        this.id = value;
-        this.document['_id'] = value;
-    }
     
-    constructor(instance = false) {
-        super();
+    _id = new PersistableProperty();
 
-        if (!instance) {
+    set Key(value) { this._id = value; }
+    get Key() { return this._id; } 
+
+    constructor(init, saveTimer = 1000) {
+        if (!init) {
             throw new Error(`Use static method .new() to create an instance of the ${this.constructor.name} entity.`);
         }
+        
+        if (saveTimer > 0) {
+            this.saveTimer = setTimeout(() => this.save(), saveTimer);
+        }
+    }
+    
+    static async new(key, initialValues = {}) {
+        const entity = new this(true);
+        entity.Database.setAutocompactionInterval(60 * 1000);
 
-        this.document = undefined;
-        this.inTransaction = false;
+        entity.document = {};
+
+        // create the PersistableProperty which turns it into a getter/setter
+        Object.keys(entity).forEach(key => {
+            if (entity[key] instanceof PersistableProperty) {
+                entity.persist(key); // make PersistableProperty
+            }
+        });
+
+        entity.changes = false;
+        entity.inTransaction = false;
+        entity.backup = undefined;
+        entity.Key = key;
+        entity.document = await entity.Database.findOneAsync({ _id: key }) || entity.document;
+        
+        if (Object.keys(initialValues).length > 0) {
+            await this.setProperties(entity, initialValues);
+        }
+
+        return await entity.save();
     }
     
     get Database() {
@@ -64,17 +93,13 @@ export default class PersistableEntity {
     }
     
     load(name) {
-        return new Datastore({
-            filename: path.join(__dirname, '..', 'resources', name.pluralize() + '.db'),
-            autoload: true
-        });
+        const filename = path.join(__dirname, '..', 'resources', name.pluralize() + '.db');
+        return new Datastore({ filename, autoload: true });
     }
 
     static load(name) {
-        return new Datastore({
-            filename: path.join(__dirname, '..', 'resources', name.pluralize() + '.db'),
-            autoload: true
-        });
+        const filename = path.join(__dirname, '..', 'resources', name.pluralize() + '.db');
+        return new Datastore({ filename, autoload: true });
     }
     
     // any static calls in this class must call the static accessor passing in this.name
@@ -86,39 +111,15 @@ export default class PersistableEntity {
         Object.defineProperty(this, name, {
             set(value) {
                 this.document[name] = value;
-                this.save();
+                this.changes = true;
             },
             get() {
                 return this.document[name];
             }
         });
     }
-    
-    static async new(key, initialValues = {}) {
-        const entity = new this(true);
 
-        entity.document = {};
-        entity.backup = undefined;
-        entity.Key = key;
-
-        entity.Database.setAutocompactionInterval(60 * 1000);
-
-        // create the PersistableProperty which turns it into a getter/setter
-        Object.keys(entity).forEach(key => {
-            if (entity[key] instanceof PersistableProperty) {
-                entity.persist(key); // make PersistableProperty
-            }
-        });
-
-        entity.document = await entity.find() || entity.document;
-        
-        if (Object.keys(initialValues).length > 0) {
-            this.setProperties(entity, initialValues);
-        }
-        return entity;
-    }
-    
-    static setProperties(entity, initialValues = {}) {
+    static async setProperties(entity, initialValues = {}) {
         entity.transaction();
 
         for (const key in initialValues) {
@@ -126,29 +127,68 @@ export default class PersistableEntity {
                 throw new Error(`Property '${key}' does not exist on '${entity.constructor.name}'.`);
             }
 
-            entity.document[key] = initialValues[key];  // Set the property to the value from args
+            entity[key] = initialValues[key];  // Set the property to the value from args
         }
 
-        entity.commit();
+        await entity.commit();
     }
 
+    /**
+     * @description Check if an entity exists by its key and return the instance if it does.
+     * @param {string} value
+     * @returns {Promise<PersistableEntity | null>}
+     */
     static async exists(value) {
-        return await PersistableEntity.getDatabaseByName(this.name).findOneAsync({ _id: value });
+        const doc = await PersistableEntity.getDatabaseByName(this.name).findOneAsync({ _id: value });
+        
+        if (doc) {
+            return await this.new(value, doc);
+        }
+        
+        return null;
     }
 
+    /**
+     * @description Get all entities or a single entity by its key.
+     * @param {string} value
+     * @returns {Promise<PersistableEntity[]>}
+     */
     static async all(value) {
+        let match;
+
         if (value) {
-            return await PersistableEntity.getDatabaseByName(this.name).findAsync({ _id: value });
+            match = await PersistableEntity.getDatabaseByName(this.name).findAsync({ _id: value });
+        } else {
+            match = await PersistableEntity.getDatabaseByName(this.name).findAsync();
         }
-        return await PersistableEntity.getDatabaseByName(this.name).findAsync();
+        
+        return await Promise.all(match.map(async doc => await this.new(doc._id, doc)));
     }
     
-    async find() {
-        return await this.Database.findOneAsync({ _id: this.Key });
+    static async find(key) {
+        const doc = await PersistableEntity.getDatabaseByName(this.name).findOneAsync({ _id: key });
+
+        if (doc) {
+            return await this.new(doc._id, doc);
+        }
+        
+        return undefined;
     }
     
-    async remove() {
-        return await this.Database.removeAsync({ _id: this.Key }, { multi: true });
+    async remove(value) {
+        if (value) {
+            return await this.Database.removeAsync({ _id: value }, { multi: true });
+        }
+
+        return await this.Database.removeAsync({}, { multi: true });
+    }
+    
+    static async removeAll() {
+        return await this.getDatabaseByName(this.name).removeAsync({}, { multi: true });
+    }
+    
+    static async deleteDatabase() {
+        fs.unlinkSync(path.join(__dirname, '..', 'resources', this.name.pluralize() + '.db'));
     }
     
     // PERSISTANCE/TRANSACTION
@@ -158,14 +198,21 @@ export default class PersistableEntity {
     }
 
     async save() {
-        if (!this.inTransaction) {
+        if (!this.inTransaction && this.changes) {
             // @ts-ignore
-            //if (config.debug.logCommits) console.log('COMMIT:', this.document);
+            if (config.debug.logCommits) console.log('COMMIT:', this.document);
             // @ts-ignore
-            //if (config.debug.logCommits && config.debug.logCommitCallstack) console.log('\n' + new Error().stack.cleanStackTrace());
+            if (config.debug.logCommits && config.debug.logCommitCallstack) {
+                console.log('CALLSTACK:');
+                //console.log('\n' + new Error().stack.cleanStackTrace());
+                console.log(new Error().stack.cleanStackTrace());
+            }
 
-            return await this.Database.updateAsync({ _id: this.Key }, this.document, { upsert: true });
+            this.changes = false;
+            await this.Database.updateAsync({ _id: this.Key }, this.document, { upsert: true });
         }
+        
+        return this;
     }
     
     transaction() {
@@ -176,6 +223,7 @@ export default class PersistableEntity {
     rollback() {
         this.document = JSON.parse(JSON.stringify(this.backup));
         this.backup = undefined;
+        this.inTransaction = false;
     }
 
     async commit() {

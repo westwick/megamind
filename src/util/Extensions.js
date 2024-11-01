@@ -1,3 +1,10 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 /** @returns {String} The pluralized form of a word. */
 String.prototype.pluralize = function () {
     const word = this.toString(); // Convert to string
@@ -14,6 +21,8 @@ String.prototype.pluralize = function () {
         } else {
             return word + 'es'; // Consonant + o
         }
+    } else if (word.toLowerCase().endsWith("data")) {
+        return word;
     } else {
         return word + 's';
     }
@@ -21,7 +30,8 @@ String.prototype.pluralize = function () {
 
 /** @returns {String} Cleans up and formats a stack trace in columns. */
 String.prototype.cleanStackTrace = function () {
-    const basePath = "file:///home/rayben/Dropbox/Ray/Development/shift/";
+    const basePath = 'file://' + path.resolve(__dirname, '..').replace(/\\/g, '/');
+
     return this.split('\n')
         .filter(line => line.includes(basePath))
         .map(line => {

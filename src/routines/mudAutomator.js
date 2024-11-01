@@ -5,6 +5,7 @@ import RealmHandler from "../handlers/realmHandler";
 import CombatHandler from "../handlers/combatHandler";
 import HealthHandler from "../handlers/healthHandler";
 import StatsHandler from "../handlers/statsHandler";
+import WhoHandler from "../handlers/whoHandler";
 import CommandManager from "./commandManager";
 
 export class MudAutomator {
@@ -36,6 +37,12 @@ export class MudAutomator {
       this.playerStats
     );
     this.statsHandler = new StatsHandler(
+      this.eventBus,
+      this.commandManager,
+      this.gameState,
+      this.playerStats
+    );
+    this.whoHandler = new WhoHandler(
       this.eventBus,
       this.commandManager,
       this.gameState,

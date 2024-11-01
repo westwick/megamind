@@ -1,0 +1,3 @@
+debug:
+  logCommits: false
+  logCommitCallstack: true
