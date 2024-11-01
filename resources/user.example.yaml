@@ -1,0 +1,7 @@
+bbs:
+  host: mud.paramud.com
+  port: 23
+
+user:
+  name:
+  password:
