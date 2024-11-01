@@ -4,5 +4,10 @@ export default defineConfig({
   test: {
     globals: true,
     includeSource: ['src/**/*.{js,ts}'],
+    poolOptions: {
+      threads: {
+        singleThread: true
+      }
+    }
   }
 }) 

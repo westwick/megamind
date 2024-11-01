@@ -15,9 +15,12 @@ export default class Configuration {
     static #defaultPaths = [
         dirname(process.argv[1]),                  // process.argv[1]
         resolve('.'),                               // ./
+        join(dirname(process.argv[1]), 'resources'),                  // process.argv[1]/resources
+        join(dirname(process.argv[1]), 'resources'),                  // process.argv[1]/resources
         join(homedir(), '.config', 'megamind'),     // ~/.config/megamind/
         '/etc/megamind',                          // /etc/megamind/
         fileURLToPath(dirname(import.meta.url)),    // module directory
+        resolve(fileURLToPath(dirname(import.meta.url)), '../../resources'), // module directory + '../../resources'
         resolve(fileURLToPath(dirname(import.meta.url)), '../resources') // module directory + '../resources'
     ];
 

@@ -4,6 +4,7 @@ playerConfig.json
 
 # Data
 data/*.mdb
+**/resources/*.db
 
 # Logs
 logs

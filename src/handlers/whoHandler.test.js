@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import WhoHandler from './whoHandler.js';
-import Player from '../entities/Player.js';
-import RealmData from '../entities/realmData.js';
 
 describe('WhoHandler', () => {
   let handler;

@@ -6,6 +6,12 @@ export default class RealmData extends PersistableEntity {
     classes = new PersistableProperty();
     races = new PersistableProperty();
     players = new PersistableProperty();
+    
+    static async defaultData() {
+        super.defaultData(this.name);
+        const realmData = await RealmData.new('default', defaultData);
+        return await realmData.save();
+    }
 
     findClassByTitle(title) {
         let foundClass = undefined;
@@ -125,6 +131,3 @@ const defaultData = {
     },
     races: ["Human", "Dwarf", "Gnome", "Halfling", "Elf", "Dark-Elf", "Half-Elf", "Half-Orc", "Goblin", "Half-Ogre", "Kang", "Nekojin", "Gaunt One"],
 };
-
-const realmData = await RealmData.new('default', defaultData);
-realmData.save();

@@ -3,7 +3,7 @@ import RealmData from './realmData.js';
 
 describe('RealmData', async () => {
     let realmData;
-
+    
     beforeEach(async () => {
         realmData = await RealmData.find('default');
     });

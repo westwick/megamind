@@ -58,7 +58,7 @@ export default class PersistableEntity {
         }
         
         if (saveTimer > 0) {
-            this.saveTimer = setTimeout(() => this.save(), saveTimer);
+            this.saveTimer = setInterval(() => this.save(), saveTimer);
         }
     }
     
@@ -92,6 +92,7 @@ export default class PersistableEntity {
         return PersistableEntity.datastore[this.constructor.name] ??= this.load(this.constructor.name);
     }
     
+    // TODO: use Configuration to get the database directory
     load(name) {
         const filename = path.join(__dirname, '..', 'resources', name.pluralize() + '.db');
         return new Datastore({ filename, autoload: true });
@@ -105,6 +106,11 @@ export default class PersistableEntity {
     // any static calls in this class must call the static accessor passing in this.name
     static getDatabaseByName(name) {
         return PersistableEntity.datastore[name] ??= this.load(name);
+    }
+    
+    static async defaultData(name) {
+        const filename = path.join(__dirname, '..', 'resources', name.pluralize() + '.db');
+        console.log('Wrote default data to:', filename);
     }
 
     persist(name) {
@@ -204,7 +210,6 @@ export default class PersistableEntity {
             // @ts-ignore
             if (config.debug.logCommits && config.debug.logCommitCallstack) {
                 console.log('CALLSTACK:');
-                //console.log('\n' + new Error().stack.cleanStackTrace());
                 console.log(new Error().stack.cleanStackTrace());
             }
 
@@ -229,5 +234,16 @@ export default class PersistableEntity {
     async commit() {
         this.inTransaction = false;
         this.save();
+    }
+    
+    async close() {
+        if (this.saveTimer) {
+            clearInterval(this.saveTimer);
+        }
+
+        this.Database.stopAutocompaction();
+        await this.Database.compactDatafileAsync();
+        delete PersistableEntity.datastore[this.constructor.name];
+        console.log(`Closed ${this.constructor.name}`);
     }
 }

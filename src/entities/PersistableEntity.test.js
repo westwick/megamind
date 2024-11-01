@@ -74,9 +74,9 @@ describe('PersistableEntity', () => {
         const entity = await TestEntity.new('test1', { name: 'Original Name', description: "This is a test entity" });
         
         // Verify initial state
-        //const initialEntity = await TestEntity.find('test1');
-        //expect(initialEntity.name).toBe('Original Name');
-        //expect(initialEntity.description).toBe("This is a test entity");
+        const initialEntity = await TestEntity.find('test1');
+        expect(initialEntity.name).toBe('Original Name');
+        expect(initialEntity.description).toBe("This is a test entity");
         
         entity.transaction();
         entity.name = 'Changed Name';
