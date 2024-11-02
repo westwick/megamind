@@ -4,7 +4,7 @@ import { app } from "electron";
 
 class PlayerConfig {
   constructor() {
-    this.configPath = path.join(app.getAppPath(), "playerConfig.json");
+    this.configPath = path.join(app.getAppPath(), "/resources/playerConfig.json");
     this.config = this.loadConfig();
   }
 
@@ -29,6 +29,7 @@ class PlayerConfig {
 
   updateConfig(section, sectionData) {
     console.log("updating config", section, sectionData);
+
     if (!this.config[section]) {
       this.config[section] = {};
     }
