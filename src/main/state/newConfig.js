@@ -1,3 +1,4 @@
+import { electron } from 'electron';
 import fs from 'fs';
 import yaml from 'yaml';
 import process from 'process';
@@ -18,7 +19,7 @@ export default class Configuration {
         join(homedir(), '.config', 'megamind'),     // ~/.config/megamind/
         '/etc/megamind',                          // /etc/megamind/
         fileURLToPath(dirname(import.meta.url)),    // module directory
-        resolve(fileURLToPath(dirname(import.meta.url)), '../resources') // module directory + '../resources'
+        resolve(fileURLToPath(dirname(import.meta.url)), '../../../resources') // module directory + '../resources'
     ];
 
     get options() { return this.#options; }
@@ -44,7 +45,7 @@ export default class Configuration {
      * );
      */
     constructor(filename, ...args) {
-        let searchPaths = null, schemaFile = null, replacements = null, loadCallback = null, errorCallback = null;
+      let searchPaths = null, schemaFile = null, replacements = null, loadCallback = null, errorCallback = null;
 
         // Sort remaining arguments by type
         for (const arg of args) {
@@ -82,7 +83,7 @@ export default class Configuration {
             target.loadCallback = loadCallback;
             target.errorCallback = errorCallback;
         }
-        
+
         if (instance) {
             return instance;
         }
@@ -137,7 +138,7 @@ export default class Configuration {
     }
 
     #resolve(configFile, searchPaths = null) {
-        const paths = (searchPaths || Configuration.#defaultPaths).map(basePath => 
+        const paths = (searchPaths || Configuration.#defaultPaths).map(basePath =>
             join(basePath, configFile)
         );
 
@@ -168,7 +169,7 @@ export default class Configuration {
                 const ajv = new Ajv({strictSchema: false});
                 const validate = ajv.compile(this.schema);
                 const valid = validate(data);
-                
+
                 if (validate.errors) {
                     return validate.errors;
                 }
@@ -184,7 +185,7 @@ export default class Configuration {
 
     #watch(file) {
         const errors = this.#loadYaml(file);
-        
+
         if (errors && this.errorCallback) {
             this.errorCallback(errors);
         } else if (!errors && this.loadCallback) {
@@ -204,12 +205,6 @@ export default class Configuration {
                     this.loadCallback();
                 }
             }
-        });
-    }
-    
-    #handleReplacements(replacements) {
-        this.#options = this.#options.replace(/\{(\w+)\}/g, (match, key) => {
-            return replacements[key] || match;
         });
     }
 }
