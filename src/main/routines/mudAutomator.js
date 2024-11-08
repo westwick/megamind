@@ -1,4 +1,4 @@
-import { strip, parse } from 'ansicolor';
+import { parse } from 'ansicolor';
 import RoomHandler from '../handlers/roomHandler';
 import ConversationHandler from '../handlers/conversationHandler';
 import CombatHandler from '../handlers/combatHandler';
@@ -7,6 +7,7 @@ import StatsHandler from '../handlers/statsHandler';
 import WhoHandler from '../handlers/whoHandler';
 import CommandManager from './commandManager';
 import Automator from './Automator';
+import '../util/Extensions';
 
 export default class MudAutomator extends Automator {
   constructor(...args) {
@@ -53,7 +54,7 @@ export default class MudAutomator extends Automator {
       this.incompleteLineBuffer = lines.pop();
 
       // if the incomplete line contains only statline information, parse that and clear buffer
-      const strippedLine = strip(this.incompleteLineBuffer);
+      const strippedLine = this.incompleteLineBuffer.stripAnsi();
       const statlineRegex = /\[HP=(\d+)(?:\/MA=(\d+))?]:\s*(?:\((Resting|Meditating)\))?/;
       const match = strippedLine.match(statlineRegex);
 
@@ -115,7 +116,7 @@ export default class MudAutomator extends Automator {
     const timestamp = Date.now(); // Get current timestamp
     const lines = messages.flatMap((msg) => {
       if (msg && msg.spans && msg.spans.length > 0) {
-        const strippedSpans = msg.spans.map((x) => strip(x.text));
+        const strippedSpans = msg.spans.map((x) => x.text.stripAnsi());
         const line = strippedSpans.join('');
         this.eventBus.emit('new-message-line', {
           line: line,
@@ -149,11 +150,5 @@ export default class MudAutomator extends Automator {
 
   sendCommand = (command) => {
     this.socket.write(command + '\r');
-  };
-
-  stripAnsi = (str) => {
-    // TODO: this is missing a lot of ansi codes, fix
-    // eslint-disable-next-line no-control-regex
-    return str.replace(/\u001b\[[0-9;]*m/g, '').replace(/\.$/, '');
   };
 }

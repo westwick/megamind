@@ -21,14 +21,30 @@ export default class WhoHandler {
     for (let i = 0; i < lines.length - 1; i++) {
       let players;
 
-      if (/^\s+Current Adventurers\s*$/.test(lines[i]) && /^\s+===================\s*$/.test(lines[i + 1])) {
-        players = await this.fromFantasyStyleWhoList(lines.slice(2));
-      } else if (/^\s+Title\s+Name\s+Reputation\s+Gang\/Guild\s*$/.test(lines[i])) {
-        players = await this.fromTechnicalStyleWhoList(lines.slice(2));
+      const adventurerIndex = lines.findIndex((line) => /^\s+Current Adventurers\s*$/.test(line));
+
+      if (adventurerIndex >= 0) {
+        players = lines.slice(adventurerIndex + 2); // Skip header and separator lines
+      }
+
+      const technicalIndex = lines.findIndex((line) => /^\s+Title\s+Name\s+Reputation\s+Gang\/Guild\s*$/.test(line));
+
+      if (technicalIndex >= 0) {
+        players = lines.slice(technicalIndex + 2); // Skip header and separator lines
+      }
+
+      if (adventurerIndex >= 0) {
+        players = await this.fromFantasyStyleWhoList(players);
+      } else if (technicalIndex >= 0) {
+        players = await this.fromTechnicalStyleWhoList(players);
       }
 
       if (players) {
         this.gameState.onlineUsers = this.realmData.players = players;
+        this.eventBus.emit(
+          'update-online-users',
+          players.map((p) => p.name)
+        );
       }
 
       return players;

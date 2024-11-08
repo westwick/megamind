@@ -108,11 +108,13 @@ class Main extends EventEmitter {
     this.socket = net.createConnection(this.realmConfig.bbs.port, this.realmConfig.bbs.host);
 
     this.socket.on('connect', () => {
-      this.socket.noDelay = true;
+      if (this.socket) {
+        this.socket.noDelay = true;
 
-      this.currentRoutine = new LoginAutomator(this);
+        this.currentRoutine = new LoginAutomator(this);
 
-      event.reply('server-connected');
+        event.reply('server-connected');
+      }
     });
 
     this.socket.on('data', (data) => {
