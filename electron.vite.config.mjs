@@ -1,10 +1,10 @@
-import { resolve } from 'path'
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
-import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path';
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
@@ -12,17 +12,20 @@ export default defineConfig({
       rollupOptions: {
         output: {
           entryFileNames: '[name].js',
-          format: 'cjs'
-        }
-      }
-    }
+          format: 'cjs',
+        },
+      },
+    },
   },
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src')
-      }
+        '@renderer': resolve('src/renderer/src'),
+      },
     },
-    plugins: [vue()]
-  }
-})
+    optimizeDeps: {
+      include: ['@xterm/xterm'],
+    },
+    plugins: [vue()],
+  },
+});

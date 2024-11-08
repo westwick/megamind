@@ -3,10 +3,6 @@ bbs:
   host: mud.paramud.com
   port: 2323
 
-user:
-  name: soul
-  password: supersecretpass
-
 login:
   - message: "Please enter your username or \"new\":"
     command: "{user.name}"
@@ -20,3 +16,11 @@ login:
     command: "1"
   - message: "Please select a character:"
     command: "1"
+  - message: "(N)onstop, (Q)uit, or (C)ontinue?"
+    command: ""
+
+gameEntry:
+  - message: "[MAJORMUD]:"
+    command: "enter"
+  - message: "[PARADIGM]:"
+    command: "enter"

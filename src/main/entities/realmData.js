@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import PersistableEntity from "./PersistableEntity.js";
 import PersistableProperty from "./PersistableProperty.js";
 
@@ -11,12 +12,11 @@ export default class RealmData extends PersistableEntity {
         let foundClass = undefined;
 
         for (const [className, classData] of Object.entries(this.classes)) {
-            if (classData.titles.includes(title)) {
-                if (foundClass) {
-                    // Found a second match, return Unknown
-                    return 'Unknown';
+            for (const classTitle of classData.titles) {
+                const [first, second] = classTitle.split("|");
+                if ((first && first.startsWith(title)) || (second && second.startsWith(title))) {
+                    return className; // Return first match
                 }
-                foundClass = className;
             }
         }
 
@@ -31,7 +31,7 @@ export default class RealmData extends PersistableEntity {
             for (let i = 0; i < classData.titles.length; i++) {
                 const [first, second] = classData.titles[i].split("|");
 
-                if (title === first || title === second) {
+                if ((first && first.startsWith(title)) || (second && second.startsWith(title))) {
                     minLevel = Math.min(minLevel, i + 1);
                     maxLevel = Math.max(maxLevel, i + 1);
                 }
@@ -123,12 +123,27 @@ const defaultData = {
             titles: ["Apprentice", "Mystic Novice", "Mystic Novice", "Mystic Novice", "Student", "Student", "Student", "Student", "Student", "Disciple", "Disciple", "Disciple", "Disciple", "Disciple", "Seeker", "Seeker", "Seeker", "Seeker", "Seeker", "Monk", "Monk", "Monk", "Monk", "Monk", "Kai Warrior", "Kai Warrior", "Kai Warrior", "Kai Warrior", "Kai Warrior", "Monk Lord|Monk Lady", "Monk Lord|Monk Lady", "Monk Lord|Monk Lady", "Monk Lord|Monk Lady", "Monk Lord|Monk Lady", "Maharishi", "Maharishi", "Maharishi", "Maharishi", "Maharishi", "Sensei", "Sensei", "Sensei", "Sensei", "Sensei", "Guru", "Guru", "Guru", "Guru", "Guru", "Lama", "Lama", "Lama", "Lama", "Lama", "Master of the Way|Mistress of the Way", "Master of the Way|Mistress of the Way", "Master of the Way|Mistress of the Way", "Master of the Way|Mistress of the Way", "Master of the Way|Mistress of the Way", "Kai Lord|Kai Lady", "Kai Lord|Kai Lady", "Kai Lord|Kai Lady", "Kai Lord|Kai Lady", "Kai Lord|Kai Lady", "Kai Master|Kai Mistress", "Kai Master|Kai Mistress", "Kai Master|Kai Mistress", "Kai Master|Kai Mistress", "Kai Master|Kai Mistress", "Yogi", "Yogi", "Yogi", "Yogi", "Yogi", "Miyagi", "Miyagi", "Miyagi", "Miyagi", "Miyagi", "Kai Weaver", "Kai Weaver", "Kai Weaver", "Kai Weaver", "Kai Weaver", "Supreme Kai", "Supreme Kai", "Supreme Kai", "Supreme Kai", "Supreme Kai", "The Transcendent", "The Transcendent", "The Transcendent", "The Transcendent", "The Transcendent", "Essence of Kai", "Essence of Kai", "Essence of Kai", "Essence of Kai", "Essence of Kai", "The Ascended", "The Ascended", "The Ascended", "The Ascended", "The Ascended" ]
         }
     },
-    races: ["Human", "Dwarf", "Gnome", "Halfling", "Elf", "Dark-Elf", "Half-Elf", "Half-Orc", "Goblin", "Half-Ogre", "Kang", "Nekojin", "Gaunt One"],
+    races: [
+        { id: "Human" },
+        { id: "Dwarf" },
+        { id: "Gnome" },
+        { id: "Halfling" },
+        { id: "Elf" },
+        { id: "Dark-Elf" },
+        { id: "Half-Elf" },
+        { id: "Half-Orc" },
+        { id: "Goblin" },
+        { id: "Half-Ogre" },
+        { id: "Kang" },
+        { id: "Nekojin" },
+        { id: "Gaunt One" }
+    ],
 };
 
 async function generateData() {
-    const realmData = await RealmData.new('default', defaultData);
-    return await realmData.save();
+  console.log('Generating default realm data');
+  const realmData = await RealmData.create('default', defaultData);
+  await realmData.save();
 }
 
-await generateData();
+generateData();

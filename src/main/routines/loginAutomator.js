@@ -1,83 +1,87 @@
-import playerConfig from "../state/playerConfig";
-import { writeToTerminal } from "../index";
+import playerConfig from '../state/playerConfig';
+import { writeToTerminal } from '../index';
+import '../util/Extensions.js';
+import Automator from './Automator';
 
-export class LoginAutomator {
-  constructor(gameState, telnetSocket, onLoginComplete, username, password) {
-    this.gameState = gameState;
-    this.telnetSocket = telnetSocket;
-    this.onLoginComplete = onLoginComplete;
-    this.loginInfo = { username, password };
-  }
-
+export default class LoginAutomator extends Automator {
   parse = (data) => {
     const text = data.dataTransformed;
-    const lines = text.split("\n");
-    const lastLine = this.stripAnsi(lines[lines.length - 1]).trim();
+    const lines = text.split('\n');
+    const lastLine = lines[lines.length - 1].stripAnsi().trim();
 
     if (!this.gameState.isLoggedIn) {
-      this.handleLogin(lastLine);
+      if (this.handleLogin(lastLine)) {
+        this.gameState.setState({ isLoggedIn: true });
+      }
     }
 
     if (this.gameState.isLoggedIn && !this.gameState.hasEnteredGame) {
-      this.handleGameEntry(lastLine);
+      if (this.handleGameEntry(lastLine)) {
+        this.gameState.setState({ hasEnteredGame: true });
+      }
     }
 
-    if (lastLine.includes("(N)onstop, (Q)uit, or (C)ontinue?")) {
-      this.sendCommand("");
-    }
-
+    // TODO: we should remove this and just use the config
     // Scan all lines for specific content
     lines.forEach((line) => {
-      const cleanLine = this.stripAnsi(line).trim();
+      const cleanLine = line.stripAnsi().trim();
       this.scanForSpecificContent(cleanLine);
     });
 
     // Check if login automation is complete
     if (this.gameState.isLoggedIn && this.gameState.hasEnteredGame) {
-      this.onLoginComplete(this.telnetSocket);
+      this.main.onLoginComplete();
     }
   };
 
   handleLogin = (lastLine) => {
-    if (lastLine.includes('Otherwise type "new":')) {
-      this.sendCommand(this.loginInfo.username);
+    const loginSteps = this.realmConfig.login || [];
+    const matchingStep = loginSteps.find((step) => lastLine.startsWith(step.message));
+
+    if (matchingStep) {
+      const command = matchingStep.command.substitute(this.userConfig);
+      this.sendCommand(command);
+    } else {
+      // we have moved on to game entry
+      const gameEntrySteps = this.realmConfig.gameEntry || [];
+      const matchingStep = gameEntrySteps.find((step) => lastLine.startsWith(step.message));
+
+      return matchingStep;
     }
 
-    if (lastLine.includes("Enter your password:")) {
-      this.sendCommand(this.loginInfo.password);
-      this.gameState.setState({ isLoggedIn: true });
-    }
+    return false;
   };
 
   handleGameEntry = (lastLine) => {
-    if (lastLine.includes("[MAJORMUD]:")) {
+    const gameEntrySteps = this.realmConfig.gameEntry || [];
+    const matchingStep = gameEntrySteps.find((step) => lastLine.startsWith(step.message));
+
+    if (matchingStep) {
       const config = playerConfig.getConfig();
 
-      // Check if auto section exists and autoAll is true
       if (config.auto.autoAll === true) {
-        this.sendCommand("enter");
-        this.gameState.setState({ hasEnteredGame: true });
+        const command = matchingStep.command.substitute(this.userConfig);
+        // TODO: game entry should really be when we detect the status line
+        this.sendCommand(command);
+        return true;
       } else {
-        writeToTerminal("AutoAll is not enabled. Waiting for manual entry.");
+        writeToTerminal('AutoAll is not enabled. Waiting for manual entry.');
       }
     }
+
+    return false;
   };
 
   scanForSpecificContent = (line) => {
-    if (
-      line.includes("Make your selection") &&
-      !this.gameState.hasSentCustomCommand
-    ) {
-      this.sendCommand("/go majormud");
+    if (line.includes('Make your selection') && !this.gameState.hasSentCustomCommand) {
+      this.sendCommand('/go majormud');
       this.gameState.hasSentCustomCommand = true;
     }
   };
 
-  stripAnsi = (str) => str.replace(/\x1B\[[0-9;]*[JKmsu]/g, "");
-
   sendCommand = (command) => {
-    if (this.telnetSocket) {
-      this.telnetSocket.write(command + "\r");
+    if (this.socket) {
+      this.socket.write(command + '\r');
     }
   };
 }

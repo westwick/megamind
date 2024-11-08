@@ -102,24 +102,17 @@ describe('Configuration', () => {
     };
 
     writeFileSync(configPath, yaml.stringify(invalidConfig));
-
-    const config = new Configuration(
-      configPath,
-      schemaPath,
-      loadCallback,
-      errorCallback
-    );
   });
 
   it('should handle variable replacements', () => {
     const configWithVars = {
       server: {
         port: 3000,
-        host: '${HOST}',
+        host: '{HOST}',
       },
       database: {
-        url: '${DB_URL}',
-        name: '${DB_NAME}',
+        url: '{DB_URL}',
+        name: '{DB_NAME}',
       },
     };
 
@@ -131,7 +124,6 @@ describe('Configuration', () => {
       DB_NAME: 'proddb',
     };
 
-    // the issue here is that it doesn't reload the file and so replacements are not applied
     const config = new Configuration(
       configPath2,
       schemaPath,
