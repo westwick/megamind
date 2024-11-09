@@ -1,4 +1,4 @@
-export class GameState {
+export default class GameState {
   constructor(eventBus) {
     this.eventBus = eventBus;
     this.isLoggedIn = false;
@@ -42,5 +42,3 @@ export class GameState {
     });
   }
 }
-
-export default GameState;

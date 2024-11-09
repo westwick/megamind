@@ -1,0 +1,7 @@
+debug:
+  logCommits: false
+  logCommitCallstack: true
+
+paths:
+  resources: "{app}/resources"
+  data: "{app}/resources/state"

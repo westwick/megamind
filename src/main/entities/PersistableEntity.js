@@ -2,262 +2,281 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import lockfile from 'proper-lockfile';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import DocumentData from './DocumentData.js';
 
-import Datastore from '@seald-io/nedb';
-
-import "../util/Extensions.js";
+import '../util/Extensions.js';
 import PersistableProperty from './PersistableProperty.js';
 import Configuration from '../state/newConfig.js';
 
-const config = new Configuration('megamind.yaml');
-
-/**
- * Base class for Entities that allow persisting to NeDB storage
- * This is not meant to be used directly but only inherited.
- * 
- * Note: Entities are not persisted until the save() method is called which is done automatically
- * if the saveTimer is greater than 0.
- *
- * @template T
- * @class PersistableEntity
- * @example
- * class User extends PersistableEntity {
- *      IP = new PersistableProperty();
- *      FirstName = new PersistableProperty();
- * }
- * 
- * const user = await User.new('soul');
- * user.IP = '127.0.0.1'; // saves in one second unless
- * user.save(); // saves immediately
- * 
- * user.transaction();
- * try {
- *      user.IP = "24.40.92.105";
- *      user.FirstName = "Richard";
- *      // call external webservice which might throw an exception
- *      user.commit();
- * } catch (e) {
- *      console.log(e);
- *      user.rollback();
- * }
- * 
- */
 export default class PersistableEntity {
-    static datastore = {};
-    
-    _id = new PersistableProperty();
+  static _config = new Configuration('megamind.yaml');
+  static _datastores = {};
 
-    set Key(value) { this._id = value; }
-    get Key() { return this._id; } 
+  _document = {};
+  _id = new PersistableProperty();
 
-    constructor(init, saveTimer = 1000) {
-        if (!init) {
-            throw new Error(`Use static method .new() to create an instance of the ${this.constructor.name} entity.`);
+  get config() {
+    return this.constructor._config;
+  }
+
+  static get config() {
+    return this._config;
+  }
+
+  static get entityName() {
+    return this.name;
+  }
+
+  get entityName() {
+    return this.constructor.name;
+  }
+
+  get document() {
+    return this._document;
+  }
+
+  set document(value) {
+    this._document = this.database.set(this._id, value);
+  }
+
+  constructor() {
+    const stack = new Error().stack;
+    if (!stack.includes('.create')) {
+      throw new Error('PersistableEntity constructor cannot be called directly. Use static create() method instead.');
+    }
+  }
+
+  static async create(key, ...args) {
+    let url = args.find((arg) => typeof arg === 'string') || '/';
+    let initialValues = args.find((arg) => typeof arg === 'object') || {};
+
+    const entity = new this();
+
+    entity.url = url;
+    entity.entity = this.entityName;
+    entity.file = this.databaseFile(entity.url, entity.entity);
+    entity.database = await this.getDatabaseInstance(entity.entity, entity.url);
+    entity.dirty = false;
+
+    // create the PersistableProperty which turns it into a getter/setter
+    Object.keys(entity).forEach((key) => {
+      if (entity[key] instanceof PersistableProperty) {
+        entity.persist(key);
+      }
+    });
+
+    entity._id = key;
+
+    const existing = entity.database.get(key);
+
+    if (existing) {
+      entity._document = existing; // skip the setter which increments the version
+    } else {
+      entity.document = { _id: key }; // create and add metadata
+    }
+
+    if (Object.keys(initialValues).length > 0) {
+      entity.setProperties(initialValues);
+    }
+
+    return entity;
+  }
+
+  static async createAll(entities, url = '/') {
+    return await Promise.all(entities.map(async (entity) => this.create(entity._id, url, entity)));
+  }
+
+  static setPersistableProperties(entity) {
+    Object.keys(entity).forEach((key) => {
+      if (entity[key] instanceof PersistableProperty) {
+        entity.persist(key);
+      }
+    });
+  }
+
+  static databaseFile(url = '/', name) {
+    const defaultPath = path.join(dirname(fileURLToPath(import.meta.url)), 'resources/state');
+
+    const dbPath = this.config.paths?.data || defaultPath;
+    const dbFile = path.join(dbPath, url, `${name.pluralize()}.json`);
+
+    if (!fs.existsSync(dirname(dbFile))) {
+      fs.mkdirSync(dirname(dbFile), { recursive: true });
+    }
+
+    return dbFile;
+  }
+
+  static async getDatabaseInstance(name, url = '/') {
+    const file = this.databaseFile(url, name);
+
+    await fs.promises.mkdir(path.dirname(file), { recursive: true });
+    try {
+      await fs.promises.access(file);
+    } catch (err) {
+      await fs.promises.writeFile(file, '');
+    }
+
+    const release = await lockfile.lock(file, { retries: 10 });
+
+    if (!this._datastores[file]) {
+      const doc = new DocumentData(file);
+      const database = await doc.load(false); // we control the lock
+      this._datastores[file] = database;
+    }
+
+    await release();
+
+    return this._datastores[file];
+  }
+
+  remove() {
+    this.document = { _id: this._id };
+    this.database.delete(this._id);
+  }
+
+  static async exists(key, url = '/') {
+    const database = await this.getDatabaseInstance(this.entityName, url);
+    return database.has(key);
+  }
+
+  static async find(key, url = '/') {
+    const database = await this.getDatabaseInstance(this.entityName, url);
+
+    const record = database.get(key);
+
+    if (record) {
+      return await this.create(key, url, record);
+    }
+
+    return undefined;
+  }
+
+  static async resolve(key, ...paths) {
+    // Search through each path in order
+    for (const url of paths) {
+      const database = await this.getDatabaseInstance(this.entityName, url);
+      if (database.has(key)) {
+        return await this.create(key, url);
+      }
+    }
+
+    return undefined;
+  }
+
+  static async all(url = '/') {
+    const database = await this.getDatabaseInstance(this.entityName, url);
+    const records = database.all();
+
+    if (records && records.length > 0) {
+      return this.createAll(records, url);
+    }
+
+    return [];
+  }
+
+  static async clear(url = '/') {
+    const database = await this.getDatabaseInstance(this.entityName, url);
+    database.clear();
+  }
+
+  async deleteDatabase() {
+    if (this.constructor._datastores[this.file]) {
+      delete this.constructor._datastores[this.file];
+    }
+
+    await this.database.deleteDatabase();
+  }
+
+  static async deleteDatabase(url = '/') {
+    const database = await this.getDatabaseInstance(this.entityName, url);
+    database.deleteDatabase();
+  }
+
+  setProperties(values = {}) {
+    Object.keys(values)
+      .filter((key) => key in this)
+      .forEach((key) => {
+        this[key] = values[key]; // Set the property to the value from args
+      });
+  }
+
+  persist(name) {
+    Object.defineProperty(this, name, {
+      set(value) {
+        // TODO; recursively check for changes if this is an array or object
+        if (this._document[name] !== value) {
+          this.dirty = true;
+          this.database.changed(this._id);
+          this._document[name] = value;
         }
-        
-        if (saveTimer > 0) {
-            this.saveTimer = setInterval(() => this.save(), saveTimer);
+      },
+      get() {
+        return this._document[name];
+      },
+    });
+  }
+
+  transaction() {
+    this.inTransaction = true;
+    this.backup = JSON.parse(JSON.stringify(this._document));
+  }
+
+  async save() {
+    if (this.dirty) {
+      if (this.config.debug.logCommits) {
+        console.log('COMMIT:', this._document);
+        if (this.config.debug.logCommitCallstack) {
+          console.log('CALLSTACK:');
+          console.log(new Error().stack.cleanStackTrace());
         }
-    }
-    static async new(key, ...args) {
-        const initialValues = args.find(arg => typeof arg === 'object') || {};
-        const inMemory = args.find(arg => typeof arg === 'boolean') || false;
+      }
 
-        const entity = new this(true);
-        entity.inMemory = inMemory;
-
-        const database = await this.getDatabaseByName(this.name);
-        database.setAutocompactionInterval(60 * 1000);
-
-        entity.document = {};
-
-        // create the PersistableProperty which turns it into a getter/setter
-        Object.keys(entity).forEach(key => {
-            if (entity[key] instanceof PersistableProperty) {
-                entity.persist(key); // make PersistableProperty
-            }
-        });
-
-        entity.changes = false;
-        entity.inTransaction = false;
-        entity.backup = undefined;
-        entity.Key = key;
-        entity.document = await database.findOneAsync({ _id: key }) || entity.document;
-        
-        if (Object.keys(initialValues).length > 0) {
-            await this.setProperties(entity, initialValues);
-        }
-
-        return await entity.save();
-    }
-    
-    async database() {
-        return await PersistableEntity.getDatabaseByName(this.constructor.name);
+      //this.database.set(this._id, this._document);
+      await this.database.save();
+      this.dirty = false;
     }
 
-    static async database(name) {
-        return await this.getDatabaseByName(name);
+    this.backup = undefined;
+  }
+
+  rollback() {
+    if (!this.inTransaction) {
+      throw new Error('Cannot rollback outside of a transaction');
     }
 
-    static async getDatabaseByName(name) {
-        const filename = path.join(__dirname, '..', 'resources', name.pluralize() + '.db');
-
-        if (!this.datastore[name]) {
-            console.log('Initializing database:', filename);
-        }
-
-        return this.datastore[name] = this.datastore[name] || new Datastore({ filename, autoload: true });
-    }
-
-    static async defaultData(name) {
-        const filename = path.join(__dirname, '..', 'resources', name.pluralize() + '.db');
-        console.log('Wrote default data to:', filename);
-    }
-
-    persist(name) {
-        Object.defineProperty(this, name, {
-            set(value) {
-                this.document[name] = value;
-                this.changes = true;
-            },
-            get() {
-                return this.document[name];
-            }
-        });
-    }
-
-    static async setProperties(entity, initialValues = {}) {
-        entity.transaction();
-
-        for (const key in initialValues) {
-            if (!(key in entity)) {
-                throw new Error(`Property '${key}' does not exist on '${entity.constructor.name}'.`);
-            }
-
-            entity[key] = initialValues[key];  // Set the property to the value from args
-        }
-
-        await entity.commit();
-    }
-
-    /**
-     * @description Check if an entity exists by its key and return the instance if it does.
-     * @param {string} value
-     * @returns {Promise<PersistableEntity | null>}
-     */
-    static async exists(value) {
-        const database = await this.getDatabaseByName(this.name);
-        const doc = await database.findOneAsync({ _id: value });
-        
-        if (doc) {
-            return await this.new(value, doc);
-        }
-        
-        return null;
-    }
-
-    /**
-     * @description Get all entities or a single entity by its key.
-     * @param {string} value
-     * @returns {Promise<PersistableEntity[]>}
-     */
-    static async all(value) {
-        let match;
-
-        const database = await this.getDatabaseByName(this.name);
-
-        if (value) {
-            match = await database.findAsync({ _id: value });
+    const copyValues = (target, source) => {
+      Object.keys(source).forEach((key) => {
+        if (typeof source[key] === 'object' && source[key] !== null) {
+          target[key] = target[key] || {};
+          copyValues(target[key], source[key]);
         } else {
-            match = await database.findAsync();
+          target[key] = source[key];
         }
-        
-        return await Promise.all(match.map(async doc => await this.new(doc._id, doc)));
-    }
-    
-    static async find(key) {
-        const database = await this.getDatabaseByName(this.name);
-        const doc = await database.findOneAsync({ _id: key });
+      });
+    };
 
-        if (doc) {
-            return await this.new(doc._id, doc);
-        }
-        
-        return undefined;
-    }
-    
-    async remove(value) {
-        const database = await this.database();
+    copyValues(this._document, this.backup);
 
-        if (value) {
-            return await database.removeAsync({ _id: value }, { multi: true });
-        }
-
-        return await database.removeAsync({}, { multi: true });
-    }
-    
-    static async removeAll() {
-        const database = await this.getDatabaseByName(this.name);
-        return await database.removeAsync({}, { multi: true });
-    }
-    
-    static async deleteDatabase() {
-        fs.unlinkSync(path.join(__dirname, '..', 'resources', this.name.pluralize() + '.db'));
-    }
-    
-    // PERSISTANCE/TRANSACTION
-    
-    clone() {
-        this.backup = JSON.parse(JSON.stringify(this.document));
-    }
-
-    async save() {
-        if (!this.inTransaction && this.changes) {
-            // @ts-ignore
-            if (config.debug.logCommits) console.log('COMMIT:', this.document);
-            // @ts-ignore
-            if (config.debug.logCommits && config.debug.logCommitCallstack) {
-                console.log('CALLSTACK:');
-                console.log(new Error().stack.cleanStackTrace());
-            }
-
-            this.changes = false;
-
-            const database = await this.database();
-            await database.updateAsync({ _id: this.Key }, this.document, { upsert: true });
-        }
-        
-        return this;
-    }
-    
-    transaction() {
-        this.clone();
-        this.inTransaction = true;
-    }
-    
-    rollback() {
-        this.document = JSON.parse(JSON.stringify(this.backup));
-        this.backup = undefined;
-        this.inTransaction = false;
-    }
-
-    async commit() {
-        this.inTransaction = false;
-        this.save();
-    }
-    
-    async close() {
-        if (this.saveTimer) {
-            clearInterval(this.saveTimer);
-        }
-
-        const database = await this.database();
-        database.stopAutocompaction();
-        await database.compactDatafileAsync();
-
-        delete PersistableEntity.datastore[this.constructor.name];
-    }
+    this.inTransaction = false;
+    this.backup = null;
+    this.database.clearChange(this._id);
+  }
 }
+
+class TestEntity extends PersistableEntity {
+  description = new PersistableProperty();
+  enabled = new PersistableProperty();
+  options = new PersistableProperty();
+}
+
+const testEntity = await TestEntity.create('test', '/', {
+  description: 'test',
+  enabled: false,
+  options: { open: true },
+});
+testEntity.save();
+
+TestEntity.config.close();

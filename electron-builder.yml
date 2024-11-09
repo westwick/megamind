@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: megamind-vite
+appId: com.megamind.app
+productName: megamind-client
 directories:
   buildResources: build
 files:
@@ -11,7 +11,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: megamind-vite
+  executableName: megamind-client
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -32,7 +32,7 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
+  maintainer: https://github.com/megamind-mud
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}

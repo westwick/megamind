@@ -16,9 +16,11 @@ lerna-debug.log*
 # resources
 resources/*
 !resources/data/*
+!resources/megamind.yaml
 !resources/config.json.example
 !resources/playerConfig.example.json
 !resources/user.example.yaml
+!resources/realm.example.yaml
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
