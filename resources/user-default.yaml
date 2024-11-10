@@ -1,0 +1,7 @@
+# DO NOT CHANGE THIS FILE
+# This is the default user config file
+default: true
+
+user:
+  name: Default User
+  password: password

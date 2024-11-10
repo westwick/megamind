@@ -11,7 +11,7 @@ import yaml from 'yaml';
 import process from 'process';
 import Ajv from 'ajv';
 
-import { dirname, resolve, join } from 'path';
+import { dirname, resolve, join, isAbsolute } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 
@@ -88,16 +88,18 @@ export default class Configuration {
       }
     }
 
-    const resolvedPath = this.#resolve(filename, searchPaths);
+    this.filename = filename;
+
+    if (!isAbsolute(this.filename)) {
+      this.filename = this.constructor.resolve(this.filename, searchPaths);
+    }
 
     // Get existing instance or create new one
-    let instance = Configuration.#instances.get(resolvedPath);
+    let instance = Configuration.#instances.get(this.filename);
     let target = instance || this;
 
-    target.configFile = resolvedPath;
-
     if (schemaFile && args.length > 0) {
-      target.schemaFile = this.#resolve(schemaFile, searchPaths);
+      target.schemaFile = this.resolve(schemaFile, searchPaths);
       let contents = fs.readFileSync(target.schemaFile, 'utf8');
       target.schema = yaml.parse(contents);
     }
@@ -138,8 +140,8 @@ export default class Configuration {
     });
 
     // Store instance for this resolved path
-    Configuration.#instances.set(resolvedPath, proxiedInstance);
-    this.#watch(this.configFile);
+    Configuration.#instances.set(this.filename, proxiedInstance);
+    this.#watch(this.filename);
 
     return proxiedInstance;
   }
@@ -150,13 +152,13 @@ export default class Configuration {
    * @throws {Error} If unable to write to file
    */
   save() {
-    if (!this.configFile) {
+    if (!this.filename) {
       throw new Error('No config file specified');
     }
 
     try {
       const yamlStr = yaml.stringify(this.#options);
-      fs.writeFileSync(this.configFile, yamlStr, 'utf8');
+      fs.writeFileSync(this.filename, yamlStr, 'utf8');
     } catch (error) {
       throw new Error(`Failed to save config: ${error.message}`);
     }
@@ -173,10 +175,10 @@ export default class Configuration {
     }
   }
 
-  #resolve(configFile, searchPaths = null) {
-    const paths = (searchPaths || Configuration.#defaultPaths)
+  static resolve(filename, searchPaths = null) {
+    const paths = (searchPaths || this.#defaultPaths)
       .filter((path) => path)
-      .map((basePath) => join(basePath, configFile));
+      .map((basePath) => join(basePath, filename));
 
     for (const path of paths) {
       if (fs.existsSync(path)) {
@@ -184,7 +186,7 @@ export default class Configuration {
       }
     }
 
-    throw new Error(`${configFile} not found in any directory.`);
+    return null;
   }
 
   #loadYaml(file) {

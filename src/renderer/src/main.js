@@ -26,55 +26,55 @@
  * ```
  */
 
-import '@xterm/xterm/css/xterm.css'
-import { Terminal } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
+import '@xterm/xterm/css/xterm.css';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
 // import { WebLinksAddon } from '@xterm/addon-web-links'
 // import { WebglAddon } from "@xterm/addon-webgl";
-import { createApp } from 'vue'
-import App from './App.vue'
-import store from './store'
-import './assets/css/index.css'
-import './assets/css/fonts.css'
+import { createApp } from 'vue';
+import App from './App.vue';
+import store from './store';
+import './assets/css/index.css';
+import './assets/css/fonts.css';
 
-const app = createApp(App)
-app.use(store)
-app.mount('#app')
+const app = createApp(App);
+app.use(store);
+app.mount('#app');
 
 // todo: find a better place to put these
 window.electronAPI.onNewRoom((event, info) => {
   store.dispatch('game/updateGameState', {
     type: 'NEW_ROOM',
-    payload: info
-  })
-})
+    payload: info,
+  });
+});
 
 window.electronAPI.onConversation((event, conversation) => {
-  store.dispatch('conversations/addConversation', conversation)
-})
+  store.dispatch('conversations/addConversation', conversation);
+});
 
 window.electronAPI.onPlayerStats((event, stats) => {
   // console.log("Player stats updated:", stats);
   store.dispatch('game/updateGameState', {
     type: 'UPDATE_PLAYER_STATS',
-    payload: stats
-  })
-})
+    payload: stats,
+  });
+});
 
 window.electronAPI.onUpdateOnlineUsers((event, users) => {
   store.dispatch('game/updateGameState', {
     type: 'UPDATE_ONLINE_USERS',
-    payload: users
-  })
-})
+    payload: users,
+  });
+});
 
 window.electronAPI.onGameStateUpdated((event, gameState) => {
-  console.log('gameStateUpdated', gameState)
+  console.log('gameStateUpdated', gameState);
   store.dispatch('game/updateGameState', {
     type: 'UPDATE_GAME_STATE',
-    payload: gameState
-  })
-})
+    payload: gameState,
+  });
+});
 
 function initTerminal() {
   // Create a new xterm.js terminal
@@ -97,107 +97,105 @@ function initTerminal() {
       brightGreen: '#00ff00',
       brightYellow: '#ffff00',
       magenta: '#800080',
-      brightMagenta: '#ff00ff'
+      brightMagenta: '#ff00ff',
     },
-    scrollback: 1000
-  })
+    scrollback: 1000,
+  });
 
   // Create and load addons
   // *disabled for now, re-visit later*
-  const fitAddon = new FitAddon()
+  const fitAddon = new FitAddon();
   // const webLinksAddon = new WebLinksAddon();
   // const webGlAddon = new WebglAddon();
-  term.loadAddon(fitAddon)
+  term.loadAddon(fitAddon);
   // term.loadAddon(webLinksAddon);
   // term.loadAddon(webGlAddon);
 
   // Initialize the terminal in the 'terminal' div
-  const terminalElement = document.getElementById('terminal')
+  const terminalElement = document.getElementById('terminal');
 
   term.attachCustomKeyEventHandler((event) => {
-    if (
-      (event.type === 'keydown' || event.type === 'keypress') &&
-      event.code.startsWith('Numpad')
-    ) {
-      const numpadKey = event.code.replace('Numpad', '')
-      let command = ''
+    if ((event.type === 'keydown' || event.type === 'keypress') && event.code.startsWith('Numpad')) {
+      const numpadKey = event.code.replace('Numpad', '');
+      let command = '';
 
       switch (numpadKey) {
         case '8':
-          command = 'n'
-          break
+          command = 'n';
+          break;
         case '2':
-          command = 's'
-          break
+          command = 's';
+          break;
         case '4':
-          command = 'w'
-          break
+          command = 'w';
+          break;
         case '6':
-          command = 'e'
-          break
+          command = 'e';
+          break;
         case '7':
-          command = 'nw'
-          break
+          command = 'nw';
+          break;
         case '9':
-          command = 'ne'
-          break
+          command = 'ne';
+          break;
         case '1':
-          command = 'sw'
-          break
+          command = 'sw';
+          break;
         case '3':
-          command = 'se'
-          break
+          command = 'se';
+          break;
         case '5':
-          command = 'look'
-          break
+          command = 'look';
+          break;
         default:
-          return true
+          return true;
       }
 
       if (event.type === 'keydown') {
-        window.electronAPI.sendData(command + '\r')
+        window.electronAPI.sendData(command + '\r');
       }
-      return false
+      return false;
     }
-    return true
-  })
+    return true;
+  });
 
   term.onData((data) => {
-    window.electronAPI.sendData(data)
-  })
+    window.electronAPI.sendData(data);
+  });
 
-  term.open(terminalElement)
-  term.write('\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\x1b[0m\x1b[K\r\n')
+  term.open(terminalElement);
+  term.write('\x1b[44m\x1b[37m\r\n*** Megamind Initialized ***\x1b[0m\x1b[K\r\n');
   // fitAddon.fit();
 
   window.electronAPI.onServerConnected(() => {
-    term.write('\x1b[44m\x1b[37m*** Connected to Server ***\x1b[0m\x1b[K\r\n')
-  })
+    term.write('\x1b[44m\x1b[37m*** Connected to Server ***\x1b[0m\x1b[K\r\n');
+  });
 
   window.electronAPI.onServerData((event) => {
-    term.write(event.dataTransformed)
-  })
+    term.write(event.dataTransformed);
+  });
 
   window.electronAPI.onServerClosed(() => {
-    term.write('\x1b[44m\x1b[37m\r\n*** Connection Closed ***\x1b[0m\x1b[K\r\n')
-  })
+    term.write('\x1b[44m\x1b[37m\r\n*** Connection Closed ***\x1b[0m\x1b[K\r\n');
+  });
 
   window.electronAPI.onServerError((err) => {
-    term.write(`\x1b[44m\x1b[37m\r\n*** Error: ${err} ***\r\n\x1b[0m`)
-  })
+    term.write(`\x1b[44m\x1b[37m\r\n*** Error: ${err} ***\r\n\x1b[0m`);
+  });
 
   window.electronAPI.onTerminalWrite((event, data) => {
-    term.write(`\x1b[44m\x1b[37m\r\n*** ${data} ***\x1b[0m\x1b[K\r\n`)
-  })
+    term.write(`\x1B[1;37;44m[${data}]\x1B[0m\n`);
+  });
 
-  return term
+  return term;
 }
 
 function startLoginRoutine() {
-  initTerminal()
+  initTerminal();
+  window.electronAPI.clientLoaded();
   // window.electronAPI.connectToServer();
 }
 
 setTimeout(() => {
-  startLoginRoutine()
-}, 100)
+  startLoginRoutine();
+}, 100);

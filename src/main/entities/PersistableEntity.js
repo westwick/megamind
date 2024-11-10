@@ -8,7 +8,7 @@ import DocumentData from './DocumentData.js';
 
 import '../util/Extensions.js';
 import PersistableProperty from './PersistableProperty.js';
-import Configuration from '../state/newConfig.js';
+import Configuration from '../state/Configuration.js';
 
 export default class PersistableEntity {
   static _config = new Configuration('megamind.yaml');

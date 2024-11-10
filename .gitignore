@@ -20,7 +20,9 @@ resources/*
 !resources/config.json.example
 !resources/playerConfig.example.json
 !resources/user.example.yaml
+!resources/user-default.yaml
 !resources/realm.example.yaml
+!resources/realm-default.yaml
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
