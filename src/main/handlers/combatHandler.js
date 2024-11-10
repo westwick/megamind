@@ -1,5 +1,5 @@
-import playerConfig from "../state/playerConfig";
-import { writeToTerminal } from "../index";
+import playerConfig from '../state/playerConfig.js';
+import { writeToTerminal } from '../index.js';
 
 class CombatHandler {
   constructor(eventBus, commandManager, gameState, playerStats) {

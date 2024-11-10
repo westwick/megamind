@@ -2,10 +2,11 @@
   "name": "megamind",
   "version": "0.0.1",
   "description": "Megamind for MajorMUD",
-  "main": "./out/main/index.js",
+  "main": "dist/main/index.js",
   "author": "https://github.com/megamind-mud/megamind-client",
   "homepage": "https://github.com/megamind-mud/megamind-client",
   "type": "module",
+  "license": "MIT",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",

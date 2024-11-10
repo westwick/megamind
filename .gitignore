@@ -108,3 +108,5 @@ typings/
 
 # Electron-Forge
 out/
+dist/
+build/

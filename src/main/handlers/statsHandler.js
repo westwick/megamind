@@ -1,4 +1,4 @@
-import playerConfig from "../state/playerConfig";
+import playerConfig from "../state/playerConfig.js";
 
 class StatsHandler {
   constructor(eventBus, commandManager, gameState, playerStats) {

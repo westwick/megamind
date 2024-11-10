@@ -1,7 +1,7 @@
-import playerConfig from '../state/playerConfig';
-import { writeToTerminal } from '../index';
+import playerConfig from '../state/playerConfig.js';
+import { writeToTerminal } from '../index.js';
 import '../util/Extensions.js';
-import Automator from './Automator';
+import Automator from './Automator.js';
 
 export default class LoginAutomator extends Automator {
   parse = (data) => {

@@ -24,12 +24,8 @@ export default class Configuration {
   static #defaultPaths = [
     app?.getAppPath(), // where the app is
     join(app?.getAppPath() || './', 'resources'), // where the resources are in the app folder
-    dirname(process.argv[1]), // process.argv[1]
     resolve('.'), // ./
     join(homedir(), '.config', 'megamind'), // ~/.config/megamind/
-    '/etc/megamind', // /etc/megamind/
-    fileURLToPath(dirname(import.meta.url)), // module directory
-    resolve(fileURLToPath(dirname(import.meta.url)), '../../../resources'), // module directory + '../resources'
   ];
 
   get options() {
