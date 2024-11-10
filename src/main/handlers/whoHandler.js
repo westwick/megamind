@@ -1,12 +1,10 @@
 import Player from '../entities/Player.js';
 import RealmData from '../entities/realmData.js';
+import Handler from './Handler.js';
 
-export default class WhoHandler {
-  constructor(eventBus, commandManager, gameState, playerStats) {
-    this.eventBus = eventBus;
-    this.commandManager = commandManager;
-    this.gameState = gameState;
-    this.playerStats = playerStats;
+export default class WhoHandler extends Handler {
+  constructor(...args) {
+    super(...args);
 
     if (this.eventBus) {
       this.eventBus.on('new-message-batch', async (event) => {

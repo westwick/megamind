@@ -1,6 +1,9 @@
-class ConversationHandler {
-  constructor(eventBus) {
-    this.eventBus = eventBus;
+import Handler from './Handler.js';
+
+class ConversationHandler extends Handler {
+  constructor(...args) {
+    super(...args);
+
     this.setupEventListeners();
   }
 

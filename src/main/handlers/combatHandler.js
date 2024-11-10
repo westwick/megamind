@@ -1,12 +1,10 @@
 import playerConfig from '../state/playerConfig.js';
 import { writeToTerminal } from '../index.js';
+import Handler from './Handler.js';
 
-class CombatHandler {
-  constructor(eventBus, commandManager, gameState, playerStats) {
-    this.eventBus = eventBus;
-    this.commandManager = commandManager;
-    this.gameState = gameState;
-    this.playerStats = playerStats;
+class CombatHandler extends Handler {
+  constructor(...args) {
+    super(...args);
 
     this.currentRound = [];
     this.roundNumber = 0;
@@ -14,18 +12,18 @@ class CombatHandler {
     this.timeSinceLastRound = null;
 
     this.manualOverrides = {
-      ignore: ["healer", "dathalar"], // Entities to never attack (in lowercase)
+      ignore: ['healer', 'dathalar'], // Entities to never attack (in lowercase)
       attack: [], // Entities to always attack (even if they're players)
     };
 
-    this.eventBus.on("new-message-line", (event) => {
+    this.eventBus.on('new-message-line', (event) => {
       this.handleCombatState(event.line);
       this.handleExperienceGain(event.line);
       this.handleExpNeededToLevel(event.line);
       this.handleCombatMessage(event); // Add this line
     });
 
-    this.eventBus.on("new-room", (event) => {
+    this.eventBus.on('new-room', (event) => {
       this.checkEnemies(event);
     });
 
@@ -41,11 +39,7 @@ class CombatHandler {
   }
 
   checkEnemies(event) {
-    if (
-      !this.gameState.inCombat &&
-      event.entities &&
-      event.entities.length > 0
-    ) {
+    if (!this.gameState.inCombat && event.entities && event.entities.length > 0) {
       if (playerConfig.getConfig().auto.autoCombat) {
         const targetEntity = this.findSuitableTarget(event.entities);
         if (targetEntity) {
@@ -64,10 +58,7 @@ class CombatHandler {
       if (this.manualOverrides.attack.includes(lowerCaseEntity)) {
         return entity;
       }
-      if (
-        !this.isPlayer(entity) &&
-        !this.manualOverrides.ignore.includes(lowerCaseEntity)
-      ) {
+      if (!this.isPlayer(entity) && !this.manualOverrides.ignore.includes(lowerCaseEntity)) {
         return entity;
       }
     }
@@ -75,9 +66,9 @@ class CombatHandler {
   }
 
   handleCombatState(line) {
-    if (line === "*Combat Engaged*") {
+    if (line === '*Combat Engaged*') {
       this.gameState.setState({ inCombat: true });
-    } else if (line === "*Combat Off*") {
+    } else if (line === '*Combat Off*') {
       this.gameState.setState({ inCombat: false });
     }
   }
@@ -87,24 +78,15 @@ class CombatHandler {
     if (match) {
       const expGained = parseInt(match[1], 10);
       this.playerStats.addExperience(expGained);
-      this.eventBus.emit("experience-gained", expGained);
-      this.commandManager.sendCommand("");
+      this.eventBus.emit('experience-gained', expGained);
+      this.commandManager.sendCommand('');
     }
   }
 
   handleExpNeededToLevel(line) {
-    const match = line.match(
-      /Exp: (\d+) Level: (\d+) Exp needed for next level: (\d+) \((\d+)\) \[(\d+)%\]/
-    );
+    const match = line.match(/Exp: (\d+) Level: (\d+) Exp needed for next level: (\d+) \((\d+)\) \[(\d+)%\]/);
     if (match) {
-      const [
-        ,
-        currentExp,
-        level,
-        expNeeded,
-        totalExpForNextLevel,
-        percentComplete,
-      ] = match.map(Number);
+      const [, currentExp, level, expNeeded, totalExpForNextLevel, percentComplete] = match.map(Number);
       this.playerStats.setExpNeededToLevel(expNeeded);
       this.playerStats.setCurrentExp(currentExp);
       this.playerStats.setLevel(level);
@@ -117,19 +99,15 @@ class CombatHandler {
     const { line, message, timestamp } = event;
 
     // Check if the message is bright red (combat hit) or teal (miss/dodge)
-    const isCombatHit = message.spans.some(
-      (span) => span.color && span.color.name === "red" && span.color.bright
-    );
-    const isMissOrDodge = message.spans.some(
-      (span) => span.color && span.color.name === "cyan" && !span.color.bright
-    );
+    const isCombatHit = message.spans.some((span) => span.color && span.color.name === 'red' && span.color.bright);
+    const isMissOrDodge = message.spans.some((span) => span.color && span.color.name === 'cyan' && !span.color.bright);
 
     if (isCombatHit || isMissOrDodge) {
       const entities = this.gameState.currentRoom?.entities || [];
 
       let attacker, target, damage;
-      const isCritical = line.includes("critically");
-      const isDodge = line.includes("dodge");
+      const isCritical = line.includes('critically');
+      const isDodge = line.includes('dodge');
 
       const hitPattern = /^(You|The .+?) .+ (.+?) for (\d+) damage!/;
       const missPattern = /^(You|The .+?) .+ (.+?)(?:, but .+)?!$/;
@@ -149,14 +127,8 @@ class CombatHandler {
 
       if (match) {
         // Normalize entity names
-        attacker =
-          attacker === "You"
-            ? "[self]"
-            : this.normalizeEntityName(attacker.replace(/^The /, ""), entities);
-        target =
-          target === "you"
-            ? "[self]"
-            : this.normalizeEntityName(target, entities);
+        attacker = attacker === 'You' ? '[self]' : this.normalizeEntityName(attacker.replace(/^The /, ''), entities);
+        target = target === 'you' ? '[self]' : this.normalizeEntityName(target, entities);
 
         const combatEvent = {
           timestamp,
@@ -171,9 +143,7 @@ class CombatHandler {
 
         if (this.currentRound.length === 0) {
           // This is the first event of a new round
-          this.timeSinceLastRound = this.lastRoundStartTime
-            ? timestamp - this.lastRoundStartTime
-            : null;
+          this.timeSinceLastRound = this.lastRoundStartTime ? timestamp - this.lastRoundStartTime : null;
 
           if (this.timeSinceLastRound !== null) {
             // writeToTerminal(
@@ -200,8 +170,8 @@ class CombatHandler {
         endTime: this.currentRound[this.currentRound.length - 1].timestamp,
       };
 
-      this.eventBus.emit("combat-round", roundSummary);
-      console.log("Combat round:", roundSummary);
+      this.eventBus.emit('combat-round', roundSummary);
+      console.log('Combat round:', roundSummary);
 
       // Calculate total damage dealt and received
       let damageDealt = 0;
@@ -210,35 +180,35 @@ class CombatHandler {
 
       this.currentRound.forEach((event) => {
         if (event.hit && event.damage) {
-          if (event.attacker === "[self]") {
+          if (event.attacker === '[self]') {
             damageDealt += event.damage;
-          } else if (event.target === "[self]") {
+          } else if (event.target === '[self]') {
             damageReceived += event.damage;
           }
         }
-        if (event.dodge && event.target === "[self]") {
+        if (event.dodge && event.target === '[self]') {
           dodges++;
         }
       });
 
       const coloredMessage = [
-        "\x1b[40m", // Set background to black
-        "\x1b[1;36m",
+        '\x1b[40m', // Set background to black
+        '\x1b[1;36m',
         `${this.timeSinceLastRound} ms`, // Bright cyan
-        "\x1b[0;37m",
+        '\x1b[0;37m',
         `. `, // White
-        "\x1b[1;32m",
+        '\x1b[1;32m',
         `Damage dealt: ${damageDealt}`, // Bright green
-        "\x1b[0;37m",
+        '\x1b[0;37m',
         `, `, // White
-        "\x1b[1;31m",
+        '\x1b[1;31m',
         `Damage received: ${damageReceived}`, // Bright red
-        "\x1b[0;37m",
+        '\x1b[0;37m',
         `, `, // White
-        "\x1b[1;35m",
+        '\x1b[1;35m',
         `Dodges: ${dodges}`, // Bright magenta
-        "\x1b[0m", // Reset all styles
-      ].join("");
+        '\x1b[0m', // Reset all styles
+      ].join('');
 
       writeToTerminal(coloredMessage);
 
@@ -252,16 +222,12 @@ class CombatHandler {
 
     // Check for partial matches
     const lowerName = name?.toLowerCase();
-    const match = entities.find((entity) =>
-      entity?.toLowerCase().includes(lowerName)
-    );
+    const match = entities.find((entity) => entity?.toLowerCase().includes(lowerName));
     return match || name;
   }
 
   isPlayer = (entityName) => {
-    return this.gameState.onlineUsers.some(
-      (user) => user.firstName === entityName
-    );
+    return this.gameState.onlineUsers.some((user) => user.firstName === entityName);
   };
 }
 
