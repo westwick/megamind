@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
-import HealingStrategy from '../strategies/HealingStrategy'
-import playerConfig from '../state/playerConfig'
-import { writeToTerminal } from '../index'
+import HealingStrategy from '../strategies/HealingStrategy.js';
+import playerConfig from '../state/playerConfig.js';
+import { writeToTerminal } from '../index.js';
 
 class HealthHandler {
   constructor(eventBus, commandManager, gameState, playerStats) {

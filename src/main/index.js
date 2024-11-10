@@ -27,8 +27,6 @@ const createWindow = () => {
     height: Math.max(768, Math.floor(screen.getPrimaryDisplay().workAreaSize.height * 0.85)),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
-      //contextIsolation: true,
-      nodeIntegration: false,
     },
     autoHideMenuBar: true,
   });

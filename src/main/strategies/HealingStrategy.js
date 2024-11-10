@@ -1,4 +1,4 @@
-import { writeToTerminal } from "../index";
+import { writeToTerminal } from "../index.js";
 
 class HealingStrategy {
   constructor(gameState, commandManager, eventBus) {

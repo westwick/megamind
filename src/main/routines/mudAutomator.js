@@ -1,13 +1,13 @@
 import { parse } from 'ansicolor';
-import RoomHandler from '../handlers/roomHandler';
-import ConversationHandler from '../handlers/conversationHandler';
-import CombatHandler from '../handlers/combatHandler';
-import HealthHandler from '../handlers/healthHandler';
-import StatsHandler from '../handlers/statsHandler';
-import WhoHandler from '../handlers/whoHandler';
-import CommandManager from './commandManager';
-import Automator from './Automator';
-import '../util/Extensions';
+import RoomHandler from '../handlers/roomHandler.js';
+import ConversationHandler from '../handlers/conversationHandler.js';
+import CombatHandler from '../handlers/combatHandler.js';
+import HealthHandler from '../handlers/healthHandler.js';
+import StatsHandler from '../handlers/statsHandler.js';
+import WhoHandler from '../handlers/whoHandler.js';
+import CommandManager from './commandManager.js';
+import Automator from './Automator.js';
+import '../util/Extensions.js';
 
 export default class MudAutomator extends Automator {
   constructor(...args) {

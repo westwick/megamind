@@ -265,18 +265,3 @@ export default class PersistableEntity {
     this.database.clearChange(this._id);
   }
 }
-
-class TestEntity extends PersistableEntity {
-  description = new PersistableProperty();
-  enabled = new PersistableProperty();
-  options = new PersistableProperty();
-}
-
-const testEntity = await TestEntity.create('test', '/', {
-  description: 'test',
-  enabled: false,
-  options: { open: true },
-});
-testEntity.save();
-
-TestEntity.config.close();
