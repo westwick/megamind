@@ -1,15 +1,9 @@
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
-import net from 'net';
-import iconv from 'iconv-lite';
-
-import MudAutomator from './routines/mudAutomator.js';
-import LoginAutomator from './routines/loginAutomator.js';
-import GameState from './state/gameState.js';
-import { PlayerStats } from './state/playerStats.js';
-import Configuration from './state/newConfig.js';
-import { EventEmitter } from 'events';
 import sourceMapSupport from 'source-map-support';
+
+import MegaMindInstance from './MegaMindInstance.js';
+import Configuration from './state/Configuration.js';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (process.env.ELECTRON_SQUIRREL_STARTUP) {
@@ -38,17 +32,15 @@ const createWindow = () => {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
+
+  mainWindow.webContents.openDevTools();
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  console.log('app ready');
   createWindow();
-  console.log('creating main');
-  main = new Main('soul.yaml', 'paradigm.yaml');
-  mainWindow.webContents.openDevTools();
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
@@ -58,6 +50,42 @@ app.whenReady().then(() => {
     }
   });
 });
+
+ipcMain.on('client-loaded', () => {
+  initialize();
+});
+
+function initialize() {
+  try {
+    let userConfig = Configuration.resolve('user.yaml') || Configuration.resolve('user-default.yaml');
+    let realmConfig = Configuration.resolve('realm.yaml') || Configuration.resolve('realm-default.yaml');
+
+    if (!userConfig) {
+      writeToTerminal('No user config file found, halting.');
+      return;
+    }
+
+    if (!realmConfig) {
+      writeToTerminal('No realm config file found, halting.');
+      return;
+    }
+
+    if (path.basename(userConfig) === 'user-default.yaml') {
+      writeToTerminal('Using default user config.');
+      writeToTerminal('Please copy resources/user-default.yaml to user.yaml to configure your user.');
+    }
+
+    if (path.basename(realmConfig) === 'realm-default.yaml') {
+      writeToTerminal('Using default realm config.');
+      writeToTerminal('Please copy resources/realm-default.yaml to realm.yaml to configure your realm.');
+    }
+
+    main = new MegaMindInstance(mainWindow, userConfig, realmConfig);
+  } catch (e) {
+    writeToTerminal('Error loading config: ' + e);
+    console.error(e);
+  }
+}
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -72,116 +100,6 @@ ipcMain.handle('load-config', () => {
   // no need to load config, it auto reloads
 });
 
-class Main extends EventEmitter {
-  #userConfig;
-  #realmConfig;
-
-  get userConfig() {
-    return this.#userConfig;
-  }
-
-  get realmConfig() {
-    return this.#realmConfig;
-  }
-
-  constructor(userConfigPath, realmConfigPath) {
-    super();
-
-    try {
-      // TODO: add in schema validation
-      this.#userConfig = new Configuration(userConfigPath);
-      this.#realmConfig = new Configuration(realmConfigPath);
-    } catch (e) {
-      writeToTerminal('Error loading config: ' + e);
-    }
-
-    this.gameState = new GameState(this);
-    this.playerStatsInstance = new PlayerStats(this);
-    this.playerStatsInstance.startSession();
-
-    this.forwardEventToRenderer('game-state-updated');
-  }
-
-  connect(event) {
-    this.socket = net.createConnection(this.realmConfig.bbs.port, this.realmConfig.bbs.host);
-
-    this.socket.on('connect', () => {
-      if (this.socket) {
-        this.socket.noDelay = true;
-
-        this.currentRoutine = new LoginAutomator(this);
-
-        event.reply('server-connected');
-      }
-    });
-
-    this.socket.on('data', (data) => {
-      let transformedData = iconv.decode(data, 'cp437');
-
-      // insert cursor reset to top after clear screen
-      // this is how older terminals behaved
-      // fixes alignment issue for the "train stats" screen so content is always at top
-      if (transformedData.includes('\x1b[2J')) {
-        transformedData = transformedData.replace(
-          '\x1b[2J',
-          '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\x1b[2J\x1b[H'
-        );
-      }
-
-      const dataEvent = {
-        dataRaw: data,
-        dataTransformed: transformedData,
-      };
-      event.reply('server-data', dataEvent);
-
-      if (this.currentRoutine) {
-        this.currentRoutine.parse(dataEvent);
-
-        if (this.currentRoutine instanceof MudAutomator) {
-          // window.electronAPI.updateRoom(gameState.currentRoom);
-        }
-      }
-    });
-
-    this.socket.on('close', () => {
-      event.reply('server-closed');
-    });
-
-    this.socket.on('error', (err) => {
-      console.error('Socket error: ', err);
-      event.reply('server-error', err.message);
-    });
-  }
-
-  disconnect() {
-    if (this.socket) {
-      this.socket.end();
-      this.socket = null;
-    }
-  }
-
-  send(data) {
-    this.socket.write(data);
-  }
-
-  forwardEventToRenderer(eventName) {
-    this.on(eventName, (data) => {
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send(eventName, data);
-      }
-    });
-  }
-
-  onLoginComplete() {
-    this.currentRoutine = new MudAutomator(main);
-
-    this.forwardEventToRenderer('conversation');
-    this.forwardEventToRenderer('update-player-stats');
-    this.forwardEventToRenderer('new-room');
-    this.forwardEventToRenderer('update-online-users');
-  }
-}
-
 ipcMain.on('connect-to-server', (event) => {
   // TODO: handle UI events loading a configuration instead of hardcoding
   main.connect(event);
@@ -192,7 +110,11 @@ ipcMain.on('send-data', (event, data) => {
 });
 
 ipcMain.handle('get-player-config', () => {
-  return main.config.options;
+  if (main) {
+    return main.userConfig.options;
+  }
+
+  return undefined;
 });
 
 ipcMain.on('update-player-config', (event, section, sectionData) => {

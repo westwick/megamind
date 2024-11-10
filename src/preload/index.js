@@ -1,9 +1,10 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   loadConfig: () => ipcRenderer.invoke('load-config'),
+  clientLoaded: () => ipcRenderer.send('client-loaded'),
 
   // server and stuff
   connectToServer: (data) => ipcRenderer.send('connect-to-server', data),
@@ -24,6 +25,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // player config
   getPlayerConfig: () => ipcRenderer.invoke('get-player-config'),
-  updatePlayerConfig: (section, sectionData) =>
-    ipcRenderer.send('update-player-config', section, sectionData)
-})
+  updatePlayerConfig: (section, sectionData) => ipcRenderer.send('update-player-config', section, sectionData),
+});
