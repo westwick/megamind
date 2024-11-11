@@ -259,7 +259,6 @@ export default class PersistableEntity {
 
   async save() {
     if (this.dirty) {
-      console.log('SAVING:', this._document);
       if (this.config.debug.logCommits) {
         console.log('COMMIT:', this._document);
         if (this.config.debug.logCommitCallstack) {
