@@ -11,9 +11,8 @@ import yaml from 'yaml';
 import process from 'process';
 import Ajv from 'ajv';
 
-import { dirname, resolve, join, isAbsolute } from 'path';
+import { resolve, join, isAbsolute } from 'path';
 import { homedir } from 'os';
-import { fileURLToPath } from 'url';
 
 export default class Configuration {
   static #instances = new Map();
@@ -22,9 +21,9 @@ export default class Configuration {
   #options;
 
   static #defaultPaths = [
+    resolve('.'), // ./
     app?.getAppPath(), // where the app is
     join(app?.getAppPath() || './', 'resources'), // where the resources are in the app folder
-    resolve('.'), // ./
     join(homedir(), '.config', 'megamind'), // ~/.config/megamind/
   ];
 
@@ -95,7 +94,7 @@ export default class Configuration {
     let target = instance || this;
 
     if (schemaFile && args.length > 0) {
-      target.schemaFile = this.resolve(schemaFile, searchPaths);
+      target.schemaFile = this.constructor.resolve(schemaFile, searchPaths);
       let contents = fs.readFileSync(target.schemaFile, 'utf8');
       target.schema = yaml.parse(contents);
     }

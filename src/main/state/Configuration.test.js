@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, unlinkSync } from 'fs';
 import yaml from 'yaml';
-import Configuration from './newConfig';
+import Configuration from './Configuration.js';
 
 describe('Configuration', () => {
   const testConfig = {
@@ -80,12 +80,7 @@ describe('Configuration', () => {
   });
 
   it('should load valid configuration', () => {
-    const config = new Configuration(
-      configPath,
-      schemaPath,
-      loadCallback,
-      errorCallback
-    );
+    const config = new Configuration(configPath, schemaPath, loadCallback, errorCallback);
     expect(config.options).toEqual(testConfig);
   });
 
@@ -124,13 +119,7 @@ describe('Configuration', () => {
       DB_NAME: 'proddb',
     };
 
-    const config = new Configuration(
-      configPath2,
-      schemaPath,
-      replacements,
-      loadCallback,
-      errorCallback
-    );
+    const config = new Configuration(configPath2, schemaPath, replacements, loadCallback, errorCallback);
 
     expect(config.options.server.host).toBe('example.com');
     expect(config.options.database.url).toBe('mongodb://example.com:27017');
