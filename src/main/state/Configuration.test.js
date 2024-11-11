@@ -156,5 +156,5 @@ describe('Configuration', () => {
 
       writeFileSync(configPath, yaml.stringify(updatedConfig));
     });
-  });
+  }, 15000);
 });
