@@ -259,12 +259,14 @@ export default class PersistableEntity {
 
   async save() {
     if (this.dirty) {
-      if (this.config.debug.logCommits) {
+      if (this.config.debug && this.config.debug.logCommits) {
         console.log('COMMIT:', this._document);
         if (this.config.debug.logCommitCallstack) {
           console.log('CALLSTACK:');
           console.log(new Error().stack.cleanStackTrace());
         }
+      } else {
+        console.log('config debug wasnt set: ' + this.config.debug);
       }
 
       //this.database.set(this._id, this._document);
