@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { writeFileSync, unlinkSync } from 'fs';
 import yaml from 'yaml';
 import Configuration from './Configuration.js';
@@ -52,39 +52,32 @@ describe('Configuration', () => {
     },
   };
 
-  const configPath = 'test-config.yaml';
-  const configPath2 = 'test-config2.yaml';
-  const schemaPath = 'test-schema.yaml';
-
   let loadCallback = () => {};
   let errorCallback = (errors) => {
     expect(errors).toBeTruthy();
   };
 
-  beforeEach(() => {
-    // Write test files
-    writeFileSync(configPath, yaml.stringify(testConfig));
-    writeFileSync(configPath2, yaml.stringify(testConfig));
-    writeFileSync(schemaPath, yaml.stringify(testSchema));
-  });
-
-  afterEach(() => {
-    // Cleanup test files
-    try {
-      unlinkSync(configPath);
-      unlinkSync(configPath2);
-      unlinkSync(schemaPath);
-    } catch (err) {
-      // Ignore cleanup errors
-    }
-  });
+  let useFile = (filename) => {
+    const schemaFile = filename.replace(/(\.[^.]+)$/, '.schema$1');
+    return [filename, schemaFile];
+  };
 
   it('should load valid configuration', () => {
+    const [configPath, schemaPath] = useFile('valid-config.yaml');
+
+    writeFileSync(configPath, yaml.stringify(testConfig));
+    writeFileSync(schemaPath, yaml.stringify(testSchema));
+
     const config = new Configuration(configPath, schemaPath, loadCallback, errorCallback);
     expect(config.options).toEqual(testConfig);
+
+    unlinkSync(configPath);
+    unlinkSync(schemaPath);
   });
 
   it('should detect schema violations', () => {
+    const [configPath, schemaPath] = useFile('invalid-schema.yaml');
+
     const invalidConfig = {
       server: {
         port: '3000', // Should be number, not string
@@ -97,6 +90,13 @@ describe('Configuration', () => {
     };
 
     writeFileSync(configPath, yaml.stringify(invalidConfig));
+    writeFileSync(schemaPath, yaml.stringify(testSchema));
+
+    const config = new Configuration(configPath, schemaPath, loadCallback, errorCallback);
+    expect(config.options).toEqual(invalidConfig);
+
+    unlinkSync(configPath);
+    unlinkSync(schemaPath);
   });
 
   it('should handle variable replacements', () => {
@@ -111,7 +111,9 @@ describe('Configuration', () => {
       },
     };
 
-    writeFileSync(configPath2, yaml.stringify(configWithVars));
+    const [configPath, schemaPath] = useFile('config-with-vars.yaml');
+    writeFileSync(configPath, yaml.stringify(configWithVars));
+    writeFileSync(schemaPath, yaml.stringify(testSchema));
 
     const replacements = {
       HOST: 'example.com',
@@ -119,35 +121,40 @@ describe('Configuration', () => {
       DB_NAME: 'proddb',
     };
 
-    const config = new Configuration(configPath2, schemaPath, replacements, loadCallback, errorCallback);
+    const config = new Configuration(configPath, schemaPath, replacements, loadCallback, errorCallback);
 
     expect(config.options.server.host).toBe('example.com');
     expect(config.options.database.url).toBe('mongodb://example.com:27017');
     expect(config.options.database.name).toBe('proddb');
+
+    unlinkSync(configPath);
+    unlinkSync(schemaPath);
   });
 
-  it('should watch for file changes', (done) => {
-    const config = new Configuration(
-      configPath,
-      schemaPath,
-      null,
-      () => {
-        // Config loaded callback
-        const updatedConfig = { ...testConfig };
-        updatedConfig.server.port = 4000;
+  it('should watch for file changes', async () => {
+    const [configPath, schemaPath] = useFile('watch-config.yaml');
+    writeFileSync(configPath, yaml.stringify(testConfig));
+    writeFileSync(schemaPath, yaml.stringify(testSchema));
 
-        writeFileSync(configPath, yaml.stringify(updatedConfig));
-      },
-      (err) => {
-        // Error callback
-        expect(err).toBeFalsy();
-      }
-    );
+    let first = true;
 
-    // Wait for file watch to detect change
-    setTimeout(() => {
-      expect(config.options.server.port).toBe(4000);
-      done();
-    }, 100);
+    await new Promise((resolve) => {
+      new Configuration(configPath, schemaPath, (options) => {
+        if (first) {
+          expect(options.server.port).toBe(3000);
+          first = false;
+        } else {
+          expect(options.server.port).toBe(4000);
+          unlinkSync(configPath);
+          unlinkSync(schemaPath);
+          resolve(); // End the test
+        }
+      });
+
+      const updatedConfig = { ...testConfig };
+      updatedConfig.server.port = 4000;
+
+      writeFileSync(configPath, yaml.stringify(updatedConfig));
+    });
   });
 });
