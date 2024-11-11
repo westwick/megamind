@@ -124,7 +124,6 @@ export default class PersistableEntity {
 
     // Create initialization promise for this file
     this._initializationPromises[file] = (async () => {
-      console.log('creating initialization promise');
       try {
         // make sure the directory and file exists
         await fs.promises.mkdir(path.dirname(file), { recursive: true });
@@ -136,7 +135,6 @@ export default class PersistableEntity {
         }
 
         // lock the file
-        console.log('locking file for database');
         const release = await lockfile.lock(file, {
           stale: 5000,
           update: 1000,
@@ -159,13 +157,11 @@ export default class PersistableEntity {
       } finally {
         // Schedule cleanup for the next tick after promise resolves
         Promise.resolve().then(() => {
-          console.log('deleting initialization promise');
           delete this._initializationPromises[file];
         });
       }
     })();
 
-    console.log('returning initialization promise');
     return await this._initializationPromises[file];
   }
 

@@ -29,7 +29,6 @@ export default class DocumentData {
     let release;
 
     if (lock) {
-      console.log('locking directory for loading');
       release = await lockfile.lock(this.directory, {
         ...this.lockOptions,
         lockfilePath: path.join(this.directory, 'dir.lock'),
@@ -43,7 +42,6 @@ export default class DocumentData {
     }
 
     if (lock) {
-      console.log('locking file for loading');
       release = await lockfile.lock(this.filename, this.lockOptions);
     }
 
@@ -72,7 +70,6 @@ export default class DocumentData {
     let release;
 
     if (lock) {
-      console.log('locking file for serialization');
       release = await lockfile.lock(this.filename, this.lockOptions);
     }
 
@@ -211,7 +208,6 @@ export default class DocumentData {
 
         // https://www.notthewizard.com/2014/06/17/are-files-appends-really-atomic/
         if (content.length >= 1024 && !release) {
-          console.log('locking file for saving');
           release = await lockfile.lock(this.filename, this.lockOptions);
         }
 
