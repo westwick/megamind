@@ -11,13 +11,5 @@ export default class StatusLineHandler extends Handler {
 
   updateStatusLine = (matches) => {
     const { hp, mana, statea, stateb, type } = matches;
-
-    if (!this.printLocked) {
-      console.log('STATUS LINE:', hp, mana, statea, stateb, type);
-      this.printLocked = true;
-      setTimeout(() => {
-        this.printLocked = false;
-      }, 20000);
-    }
   };
 }

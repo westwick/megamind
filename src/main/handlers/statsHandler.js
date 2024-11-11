@@ -5,8 +5,8 @@ class StatsHandler extends Handler {
   constructor(...args) {
     super(...args);
 
-    this.eventBus.on('new-message-batch', (event) => {
-      this.updateStats(event.lines);
+    this.eventBus.on('player-status', (lines, matches) => {
+      playerConfig.updateConfig('stats', matches);
     });
   }
 

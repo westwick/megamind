@@ -9,7 +9,7 @@ import StatusLineHandler from '../handlers/statusLineHandler.js';
 import CommandManager from './commandManager.js';
 import Automator from './Automator.js';
 import '../util/Extensions.js';
-import { classifyLine, classifyBatch } from './classifier.js';
+import { classifyLine, classifyBatch, patterns } from './classifier.js';
 
 export default class MudAutomator extends Automator {
   constructor(...args) {
@@ -94,7 +94,6 @@ export default class MudAutomator extends Automator {
         }
 
         if (classified?.event) {
-          console.log('lineEvent', classified.event);
           this.eventBus.emit(classified.event, line, classified.matches);
         }
 
@@ -103,14 +102,10 @@ export default class MudAutomator extends Automator {
       return [];
     });
 
-    const classified = classifyBatch(lines);
-
-    if (classified?.parentEvent) {
-      this.eventBus.emit(classified.parentEvent, lines, classified.matches);
-    }
+    const filteredLines = lines.map((line) => line.replace(patterns['status-line'], ''));
+    const classified = classifyBatch(filteredLines);
 
     if (classified?.event) {
-      console.log('batchEvent', classified.event);
       this.eventBus.emit(classified.event, lines, classified.matches);
     }
   };

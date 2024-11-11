@@ -67,8 +67,6 @@ export default class PersistableEntity {
       }
     });
 
-    entity._id = key;
-
     const existing = entity.database.get(key);
 
     if (existing) {
@@ -109,27 +107,66 @@ export default class PersistableEntity {
     return dbFile;
   }
 
+  static _initializationPromises = {};
+
   static async getDatabaseInstance(name, url = '/') {
     const file = this.databaseFile(url, name);
 
-    await fs.promises.mkdir(path.dirname(file), { recursive: true });
-    try {
-      await fs.promises.access(file);
-    } catch (err) {
-      await fs.promises.writeFile(file, '');
+    // Return existing datastore if available
+    if (this._datastores[file]) {
+      return this._datastores[file];
     }
 
-    const release = await lockfile.lock(file, { retries: 10 });
-
-    if (!this._datastores[file]) {
-      const doc = new DocumentData(file);
-      const database = await doc.load(false); // we control the lock
-      this._datastores[file] = database;
+    // If initialization is in progress, wait for it
+    if (this._initializationPromises[file]) {
+      return await this._initializationPromises[file];
     }
 
-    await release();
+    // Create initialization promise for this file
+    this._initializationPromises[file] = (async () => {
+      console.log('creating initialization promise');
+      try {
+        // make sure the directory and file exists
+        await fs.promises.mkdir(path.dirname(file), { recursive: true });
 
-    return this._datastores[file];
+        try {
+          await fs.promises.access(file);
+        } catch (err) {
+          await fs.promises.writeFile(file, '');
+        }
+
+        // lock the file
+        console.log('locking file for database');
+        const release = await lockfile.lock(file, {
+          stale: 5000,
+          update: 1000,
+          retries: {
+            forever: true,
+            minTimeout: 100,
+            maxTimeout: 1000,
+          },
+        });
+
+        // Double-check pattern after acquiring lock
+        if (!this._datastores[file]) {
+          const doc = new DocumentData(file);
+          const database = await doc.load(false); // we control the lock
+          this._datastores[file] = database;
+        }
+
+        await release();
+        return this._datastores[file];
+      } finally {
+        // Schedule cleanup for the next tick after promise resolves
+        Promise.resolve().then(() => {
+          console.log('deleting initialization promise');
+          delete this._initializationPromises[file];
+        });
+      }
+    })();
+
+    console.log('returning initialization promise');
+    return await this._initializationPromises[file];
   }
 
   remove() {
@@ -226,6 +263,7 @@ export default class PersistableEntity {
 
   async save() {
     if (this.dirty) {
+      console.log('SAVING:', this._document);
       if (this.config.debug.logCommits) {
         console.log('COMMIT:', this._document);
         if (this.config.debug.logCommitCallstack) {
@@ -240,6 +278,7 @@ export default class PersistableEntity {
     }
 
     this.backup = undefined;
+    return this;
   }
 
   rollback() {

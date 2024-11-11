@@ -9,9 +9,18 @@ export default class DocumentData {
   _changes = new Map();
   _data = new Map();
 
-  constructor(filename) {
+  constructor(filename, lockOptions = null) {
     this.filename = filename;
     this.directory = path.dirname(filename);
+    this.lockOptions = lockOptions || {
+      stale: 5000,
+      update: 1000,
+      retries: {
+        forever: true,
+        minTimeout: 50,
+        maxTimeout: 500,
+      },
+    };
   }
 
   async load(lock = true) {
@@ -20,8 +29,9 @@ export default class DocumentData {
     let release;
 
     if (lock) {
+      console.log('locking directory for loading');
       release = await lockfile.lock(this.directory, {
-        retries: 10,
+        ...this.lockOptions,
         lockfilePath: path.join(this.directory, 'dir.lock'),
       });
     }
@@ -33,7 +43,8 @@ export default class DocumentData {
     }
 
     if (lock) {
-      release = await lockfile.lock(this.filename, { retries: 10 });
+      console.log('locking file for loading');
+      release = await lockfile.lock(this.filename, this.lockOptions);
     }
 
     const stat = await fs.stat(this.filename);
@@ -61,7 +72,8 @@ export default class DocumentData {
     let release;
 
     if (lock) {
-      release = await lockfile.lock(this.filename, { retries: 10 });
+      console.log('locking file for serialization');
+      release = await lockfile.lock(this.filename, this.lockOptions);
     }
 
     await fs.writeFile(this.filename, this._serialize());
@@ -188,7 +200,6 @@ export default class DocumentData {
   // resolved on load
   async save() {
     let release;
-    let lockOptions = { retries: 10 };
     let queue = [];
 
     for (const [key, change] of this._changes) {
@@ -200,7 +211,8 @@ export default class DocumentData {
 
         // https://www.notthewizard.com/2014/06/17/are-files-appends-really-atomic/
         if (content.length >= 1024 && !release) {
-          release = await lockfile.lock(this.filename, lockOptions);
+          console.log('locking file for saving');
+          release = await lockfile.lock(this.filename, this.lockOptions);
         }
 
         await fs.appendFile(this.filename, content + '\n');

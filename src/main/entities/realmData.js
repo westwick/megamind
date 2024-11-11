@@ -61,7 +61,7 @@ export default class RealmData extends PersistableEntity {
             });
         }
 
-        return Array.from(uniqueTitles).sort();
+        return Array.from(uniqueTitles).sort((a, b) => b.length - a.length);
     }
 }
 

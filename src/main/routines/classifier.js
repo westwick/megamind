@@ -1,6 +1,11 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
 /* eslint-disable no-control-regex */
+
+import RealmData from '../entities/realmData.js';
+
+const realmData = await RealmData.create('default');
+
 const linePatterns = {
   stealth: {
     'user-sneaking': /^Sneaking.../,
@@ -58,10 +63,9 @@ const linePatterns = {
   },
   status: {
     'status-line': /^\[HP=(?<hp>\d{1,4})(?:\/(?<type>MA|KAI)=(?<mana>\d{1,3}))?(?:\s\((?<statea>Resting|Meditating)\)\s)?\]:(?:\s\((?<stateb>Resting|Meditating)\))?/,
-    'user-experience': /^Exp: (?<exp>\d+) Level: (?<level>\d+) Exp needed for next level: (?<need>\d+) \((?<req>\d+)\) \[(?<per>\d+)%\]/,
+    'user-experience': /^Exp: (?<exp>\d+) Level: (?<level>\d+) Exp needed for next level: (?<need>\d+) \((?<req>\d+)\) \[(?<percent>\d+)%\]/,
     'user-profile': /^(Recent Deaths:|Location:)/,
     'user-encumbrance': /^Encumbrance:\s+\d+/,
-    'user-status': /Willpower:\s+\d{2,3}/,
   },
   module: {
     'player-disconnects': /^(?<player>\w+) just disconnected!!!./,
@@ -71,12 +75,53 @@ const linePatterns = {
 };
 
 const batchPatterns = {
-  who: {
-    'who-list': [/^\s+Current Adventurers/m, /^\s+Title\s+Name\s+Reputation\s+Gang\/Guild\s*$/m],
+  'who-fantasy': {
+    match: /^\s+Current Adventurers\s*$/m,
+    type: 'array',
+    qualifiers: [
+      // eslint-disable-next-line no-regex-spaces
+      new RegExp(
+        `^\\s*( {8}|${realmData.alignments.join('|')}) (\\w+) (\\w+)? *([-x])  (${realmData.getAllTitles().join('|')}) *(?: of ([\\w ]+?)(?=(?: (?:M|S|V))? *$))?(?: (M|S|V))?$`,
+      ),
+    ],
+  },
+  'who-technical': {
+    match: /^\s+Title\s+Name\s+Reputation\s+Gang\/Guild\s*$/m,
+    type: 'array',
+    qualifiers: [
+      /^(.{1,15})\s+(\S+)\s*(\S*)\s*([ga]*)\s*(Good|Neutral|Seedy|Criminal|Lawful|Villain|Saint|Outlaw)\s+(.*)$/,
+    ],
+  },
+  'player-status': {
+    match: /^Name:\s+[\w\s]+\s+Lives\/CP:\s+\d+\/\d+/,
+    type: 'object',
+    qualifiers: [
+      /^Name:\s+(?<first>\w+) (?<last>\w*)\s+Lives\/CP:\s+(?<lives>\d+)\/(?<cp>\d+)/m,
+      /^Race:\s+(?<race>[\w-]+)\s+Exp:\s+(?<exp>\d+)\s+Perception:\s+(?<perception>\d+)/m,
+      /^Class:\s+(?<class>\w+)\s+Level: (?<level>\d+)\s+Stealth:\s+(?<stealth>\d+)/m,
+      /^Hits:\s+(?<hp>\d+)\/(?<hpmax>\d+)\s+Armour Class:\s+(?<ac>\d+)\/(?<dr>\d+)\s+Thievery:\s+(?<thievery>\d+)/m,
+      /^(?:(?:Mana|Kai):\s+(?<ma>\d+)\/(?<mamax>\d+))?\s+(?:Spellcasting:\s+(?<sc>\d+)\s+)?Traps:\s+(?<traps>\d+)/m,
+      /^\s+Picklocks:\s+(?<picks>\d+)/m,
+      /^Strength:\s+(?<strength>\d+)\s+Agility:\s+(?<agility>\d+)\s+Tracking:\s+(?<tracking>\d+)/m,
+      /^Willpower:\s+(?<willpower>\d+)\s+Charm:\s+(?<charm>\d+)\s+MagicRes:\s+(?<mres>\d+)/m,
+    ],
   },
 };
 
-function classify(message, patterns = linePatterns) {
+const patterns = {
+  ...Object.entries(linePatterns).reduce((acc, [, subPatterns]) => {
+    Object.entries(subPatterns).forEach(([key, pattern]) => {
+      acc[key] = pattern;
+    });
+    return acc;
+  }, {}),
+  ...Object.entries(batchPatterns).reduce((acc, [key, pattern]) => {
+    acc[key] = pattern.match;
+    return acc;
+  }, {})
+};
+
+function classifyLine(message, patterns = linePatterns) {
   for (const [parentEvent, value] of Object.entries(patterns)) {
     for (const [event, pattern] of Object.entries(value)) {
       if (Array.isArray(pattern)) {
@@ -96,18 +141,57 @@ function classify(message, patterns = linePatterns) {
   }
 }
 
-function classifyLine(line) {
-  return classify(line);
-}
-
 function classifyBatch(lines) {
+  let match;
+
   for (const line of lines) {
-    const match = classify(line, batchPatterns);
+    for (const [key, pattern] of Object.entries(batchPatterns)) {
+      if (line.match(pattern.match)) {
+        match = { key, ...pattern };
+        break;
+      }
+    }
 
     if (match) {
-      return match;
+      break;
     }
+  }
+
+  if (match) {
+    let matches;
+
+    for (const line of lines) {
+      if (match.type === 'array') {
+        for (const qualifier of match.qualifiers) {
+          const result = line.match(qualifier);
+
+          if (result) {
+            if (!matches) {
+              matches = [];
+            }
+
+            if (result.groups) {
+              matches.push(result.groups);
+            } else {
+              matches.push(result);
+            }
+          }
+        }
+      } else if (match.type === 'object') {
+        const result = match.qualifiers.map((q) => line.match(q)).find(Boolean);
+
+        if (result && result.groups) {
+          if (!matches) {
+            matches = {};
+          }
+
+          Object.assign(matches, result.groups);
+        }
+      }
+    }
+
+    return { event: match.key, matches };
   }
 }
 
-export { classifyLine, classifyBatch };
+export { classifyLine, classifyBatch, patterns };
