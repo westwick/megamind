@@ -5,9 +5,11 @@ import CombatHandler from '../handlers/combatHandler.js';
 import HealthHandler from '../handlers/healthHandler.js';
 import StatsHandler from '../handlers/statsHandler.js';
 import WhoHandler from '../handlers/whoHandler.js';
+import StatusLineHandler from '../handlers/statusLineHandler.js';
 import CommandManager from './commandManager.js';
 import Automator from './Automator.js';
 import '../util/Extensions.js';
+import { classifyLine, classifyBatch, patterns } from './classifier.js';
 
 export default class MudAutomator extends Automator {
   constructor(...args) {
@@ -20,12 +22,26 @@ export default class MudAutomator extends Automator {
     this.startStatsUpdateInterval();
     this.commandManager = new CommandManager(this.socket);
 
-    this.roomHandler = new RoomHandler(this.eventBus, this.commandManager);
-    this.conversationHandler = new ConversationHandler(this.eventBus);
+    this.roomHandler = new RoomHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
+
+    this.conversationHandler = new ConversationHandler(
+      this.eventBus,
+      this.commandManager,
+      this.gameState,
+      this.playerStats
+    );
+
     this.combatHandler = new CombatHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
     this.healthHandler = new HealthHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
     this.statsHandler = new StatsHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
     this.whoHandler = new WhoHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
+
+    this.statusLineHandler = new StatusLineHandler(
+      this.eventBus,
+      this.commandManager,
+      this.gameState,
+      this.playerStats
+    );
   }
 
   parse = (data) => {
@@ -53,87 +69,45 @@ export default class MudAutomator extends Automator {
     if (!fullData.endsWith('\r\n')) {
       this.incompleteLineBuffer = lines.pop();
 
-      // if the incomplete line contains only statline information, parse that and clear buffer
-      const strippedLine = this.incompleteLineBuffer.stripAnsi();
-      const statlineRegex = /\[HP=(\d+)(?:\/MA=(\d+))?]:\s*(?:\((Resting|Meditating)\))?/;
-      const match = strippedLine.match(statlineRegex);
+      const classified = classifyLine(this.incompleteLineBuffer.stripAnsi());
 
-      if (match) {
-        const [, currentHealth, currentMana, state] = match;
-        const statlineUpdate = {
-          currentHealth: parseInt(currentHealth, 10),
-          currentMana: currentMana ? parseInt(currentMana, 10) : undefined,
-          resting: state === 'Resting',
-          meditating: state === 'Meditating',
-        };
-
-        this.eventBus.emit('new-statline-update', statlineUpdate);
-        // actually not positive we want to clear this, but working for now
-        this.incompleteLineBuffer = '';
+      if (classified && classified.event === 'status-line') {
+        this.eventBus.emit(classified.event, this.incompleteLineBuffer.stripAnsi(), classified.matches);
       }
     }
 
     const parsedSpans = lines.map((line) => parse(line));
 
-    const filteredSpans = parsedSpans.map((line) => {
-      const realSpans = [];
-      const statlineSpans = [];
-      //filter out spans that contain statline info or ONLY ansi info
-      if (line.spans && line.spans.length > 0) {
-        line.spans.forEach((span) => {
-          if (
-            span.text === ']:' ||
-            span.text.includes('[HP=') ||
-            span.text.includes('/MA=') ||
-            span.text === '\u001b[79D\u001b[K' ||
-            span.text === ']:\u001b[79D\u001b[K' ||
-            span.text === ']: (Resting) ' ||
-            span.text === ']: (Meditating) '
-          ) {
-            // not doing anything with these right now
-            // since the most recent statline will always(?) be part of the incompleteLineBuffer
-            // so i believe these should all be old/irrelevant
-            statlineSpans.push(span);
-            return false;
-          }
-          // thesse are normally stripped away by the above, but sometimes these
-          // remain if the line color is the same as the default color
-          span.text = span.text.replace(']:', '');
-          span.text = span.text.replace('(Resting)', '');
-          span.text = span.text.replace('(Meditating)', '');
-          // span.text = span.text.trim();
-          realSpans.push(span);
-        });
-        line.spans = realSpans;
-      }
-      return line;
-    });
-
-    this.processMessage(filteredSpans);
+    this.processMessage(parsedSpans);
   };
 
   processMessage = (messages) => {
-    const timestamp = Date.now(); // Get current timestamp
     const lines = messages.flatMap((msg) => {
       if (msg && msg.spans && msg.spans.length > 0) {
         const strippedSpans = msg.spans.map((x) => x.text.stripAnsi());
         const line = strippedSpans.join('');
-        this.eventBus.emit('new-message-line', {
-          line: line,
-          message: msg,
-          timestamp: timestamp, // Add timestamp to the event
-        });
+
+        const classified = classifyLine(line);
+
+        if (classified?.parentEvent) {
+          this.eventBus.emit(classified.parentEvent, line, classified.matches);
+        }
+
+        if (classified?.event) {
+          this.eventBus.emit(classified.event, line, classified.matches);
+        }
+
         return line;
       }
       return [];
     });
 
-    // Process the entire message for the 'who' command output or similar
-    this.eventBus.emit('new-message-batch', {
-      lines: lines,
-      messages: messages,
-      timestamp: timestamp, // Add timestamp to the batch event as well
-    });
+    const filteredLines = lines.map((line) => line.replace(patterns['status-line'], ''));
+    const classified = classifyBatch(filteredLines);
+
+    if (classified?.event) {
+      this.eventBus.emit(classified.event, lines, classified.matches);
+    }
   };
 
   updatePlayerStats = () => {
