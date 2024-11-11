@@ -51,7 +51,7 @@ export default class WhoHandler extends Handler {
       })
     );
 
-    return players;
+    return await Promise.all(players);
   }
 
   async playerInfo(first, last, alignment, title, gang, flags, status) {
