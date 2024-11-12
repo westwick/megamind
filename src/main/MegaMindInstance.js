@@ -20,18 +20,14 @@ export default class MegaMindInstance extends EventEmitter {
     return this.#realmConfig;
   }
 
-  constructor(mainWindow, userConfigPath, realmConfigPath) {
+  constructor(mainWindow, userConfig, realmConfig) {
     super();
 
+    this.config = new Configuration('megamind.yaml');
     this.mainWindow = mainWindow;
 
-    try {
-      // TODO: add in schema validation
-      this.#userConfig = new Configuration(userConfigPath);
-      this.#realmConfig = new Configuration(realmConfigPath);
-    } catch (e) {
-      this.writeToTerminal('Error loading config: ' + e);
-    }
+    this.#userConfig = userConfig;
+    this.#realmConfig = realmConfig;
 
     this.gameState = new GameState(this);
     this.playerStatsInstance = PlayerStats;

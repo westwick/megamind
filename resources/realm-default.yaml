@@ -1,7 +1,5 @@
 # DO NOT CHANGE THIS FILE
 # This is the default realm config
-default: true
-
 bbs:
   name: Default Realm
   host: localhost

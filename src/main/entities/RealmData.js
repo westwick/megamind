@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable prettier/prettier */
 import PersistableEntity from "./PersistableEntity.js";
 import PersistableProperty from "./PersistableProperty.js";
@@ -6,7 +7,6 @@ export default class RealmData extends PersistableEntity {
     alignments = new PersistableProperty();
     classes = new PersistableProperty();
     races = new PersistableProperty();
-    players = new PersistableProperty();
 
     findClassByTitle(title) {
         let foundClass = undefined;

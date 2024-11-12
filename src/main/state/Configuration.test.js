@@ -103,11 +103,11 @@ describe('Configuration', () => {
     const configWithVars = {
       server: {
         port: 3000,
-        host: '{HOST}',
+        host: '${HOST}',
       },
       database: {
-        url: '{DB_URL}',
-        name: '{DB_NAME}',
+        url: '${DB_URL}',
+        name: '${DB_NAME}',
       },
     };
 
