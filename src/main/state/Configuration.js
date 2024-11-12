@@ -94,7 +94,12 @@ export default class Configuration {
     let target = instance || this;
 
     if (schemaFile && args.length > 0) {
-      target.schemaFile = this.constructor.resolve(schemaFile, searchPaths);
+      target.schemaFile = schemaFile;
+
+      if (!isAbsolute(schemaFile)) {
+        target.schemaFile = this.constructor.resolve(schemaFile, searchPaths);
+      }
+
       let contents = fs.readFileSync(target.schemaFile, 'utf8');
       target.schema = yaml.parse(contents);
     }
@@ -200,6 +205,7 @@ export default class Configuration {
       }
 
       const data = yaml.parse(yamlContent);
+      this.#options = data; // we set the options anyway so that we can re-validate if changed
 
       // validate the YAML file against a schema if provided
       if (this.schema) {
@@ -211,8 +217,6 @@ export default class Configuration {
           return validate.errors;
         }
       }
-
-      this.#options = data;
     } catch (error) {
       return error;
     }
@@ -226,7 +230,7 @@ export default class Configuration {
     if (errors && this.errorCallback) {
       this.errorCallback(errors);
     } else if (!errors && this.loadCallback) {
-      this.loadCallback();
+      this.loadCallback(this.#options);
     }
 
     this.#watcher = fs.watchFile(file, (curr, prev) => {
@@ -239,7 +243,7 @@ export default class Configuration {
         }
 
         if (!errors && this.loadCallback) {
-          this.loadCallback();
+          this.loadCallback(this.#options);
         }
       }
     });
