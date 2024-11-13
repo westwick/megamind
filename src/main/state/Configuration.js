@@ -59,14 +59,6 @@ export default class Configuration {
       loadCallback = null,
       errorCallback = null;
 
-    this.replacements = {};
-
-    if (app) {
-      this.replacements = { app: app.getAppPath() };
-    } else {
-      this.replacements = { app: process.cwd() };
-    }
-
     // Sort remaining arguments by type
     for (const arg of args) {
       if (Array.isArray(arg)) {
@@ -105,12 +97,9 @@ export default class Configuration {
       target.schema = yaml.parse(contents);
     }
 
-    // override replacements, loadCallback, and errorCallback if provided
-    if (args.length > 0) {
-      target.replacements = { ...target.replacements, ...replacements };
-      target.loadCallback = loadCallback;
-      target.errorCallback = errorCallback;
-    }
+    target.replacements = replacements || target.replacements;
+    target.loadCallback = loadCallback || target.loadCallback;
+    target.errorCallback = errorCallback || target.errorCallback;
 
     if (instance) {
       return instance;

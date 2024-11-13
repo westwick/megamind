@@ -1,5 +1,5 @@
 <template>
-  <div class="flex app-settings">
+  <div class="flex app-settings" @click.stop>
     <ul class="menu-list">
       <li v-for="tab in tabs" :key="tab.id">
         <a href="#" class="menu-item" :class="{ active: activeTab === tab.id }" @click.prevent="setActiveTab(tab.id)">
@@ -10,8 +10,8 @@
     <div class="content-area">
       <div v-if="activeTab === 'profiles'">
         <div class="profiles-section">
-          <div class="profiles-header flex justify-end">
-            <button class="add-profile-btn" @click="handleAddProfile">
+          <div class="profiles-header">
+            <button class="add-profile-btn">
               <Plus class="w-5 h-5" />
             </button>
           </div>
@@ -21,18 +21,38 @@
               :key="profile.path"
               class="profile-item"
               :class="{ 'profile-selected': profile.path === selectedProfile }"
-              @click="handleProfileSelect(profile)"
+              @click="!editingProfileId && handleProfileSelect(profile)"
             >
               <div class="profile-content flex">
-                <img :src="`/images/${profile.character.race || 'human'}.jpg`" alt="Race Image" class="profile-image" />
                 <img
-                  :src="`/images/${profile.character.class || 'warrior'}.jpg`"
+                  :src="`/images/${profile?.options?.character?.race || 'human'}.jpg`"
+                  alt="Race Image"
+                  class="profile-image"
+                />
+                <img
+                  :src="`/images/${profile?.options?.character?.class || 'warrior'}.jpg`"
                   alt="Class Image"
                   class="profile-image"
                 />
                 <div class="profile-details">
-                  <span class="profile-name">{{ profile.name || 'Unnamed Profile' }}</span>
-                  <span class="profile-file">{{ profile.fileName }}</span>
+                  <span
+                    v-if="!editingProfileId || editingProfileId !== profile.path"
+                    class="profile-name"
+                    @click.stop="startEditing(profile)"
+                  >
+                    {{ profile?.options?.profileName || 'Unnamed Profile' }}
+                    <Pencil class="w-4 h-4 inline-block ml-2 text-gray-400" />
+                  </span>
+                  <input
+                    v-else
+                    ref="profileNameInput"
+                    v-model="editingProfileName"
+                    type="text"
+                    class="profile-name-input"
+                    @blur="handleProfileNameUpdate"
+                    @keyup.enter="handleProfileNameUpdate"
+                    @click.stop
+                  />
                 </div>
               </div>
               <div class="profile-divider"></div>
@@ -41,35 +61,7 @@
         </div>
       </div>
       <div v-if="activeTab === 'general'">
-        <DynamicSettings
-          v-model="config[getConfigPath(activeTab)]"
-          :object="config"
-          :path="getConfigPath(activeTab)"
-          @update="handleConfigUpdate"
-        />
-      </div>
-      <div v-if="activeTab === 'health'">
-        <DynamicSettings
-          v-model="config[getConfigPath(activeTab)]"
-          :object="config"
-          :path="getConfigPath(activeTab)"
-          @update="handleConfigUpdate"
-        />
-      </div>
-      <div v-if="activeTab === 'combat'">
-        <DynamicSettings :object="config" :path="getConfigPath(activeTab)" @update="handleConfigUpdate" />
-      </div>
-      <div v-if="activeTab === 'spells'">
-        <DynamicSettings :object="config" :path="getConfigPath(activeTab)" @update="handleConfigUpdate" />
-      </div>
-      <div v-if="activeTab === 'party'">
-        <DynamicSettings :object="config" :path="getConfigPath(activeTab)" @update="handleConfigUpdate" />
-      </div>
-      <div v-if="activeTab === 'pvp'">
-        <DynamicSettings :object="config" :path="getConfigPath(activeTab)" @update="handleConfigUpdate" />
-      </div>
-      <div v-if="activeTab === 'cash'">
-        <DynamicSettings :object="config" :path="getConfigPath(activeTab)" @update="handleConfigUpdate" />
+        <DynamicSettings :settings="config[getConfigPath(activeTab)]" />
       </div>
     </div>
   </div>
@@ -79,7 +71,7 @@
 import { ref, onMounted } from 'vue';
 import DynamicSettings from './DynamicSettings.vue';
 import { useStore } from 'vuex';
-import { Plus } from 'lucide-vue-next';
+import { Plus, Pencil } from 'lucide-vue-next';
 
 const store = useStore();
 const activeTab = ref('');
@@ -119,6 +111,8 @@ onMounted(async () => {
 });
 
 const handleProfileSelect = (profile) => {
+  if (editingProfileId.value) return;
+
   window.electronAPI.loadProfile(profile.path);
   selectedProfile.value = profile.path;
   store.commit('SET_IS_SETTINGS_OPEN', false);
@@ -154,6 +148,36 @@ const handleConfigUpdate = ({ path, value }) => {
   console.log(`Updated ${path} to:`, value);
   config.value[path] = value;
   // Here you can handle persistence, vuex updates, etc.
+};
+
+const editingProfileId = ref(null);
+const editingProfileName = ref('');
+const profileNameInput = ref(null);
+
+const startEditing = (profile) => {
+  editingProfileId.value = profile.path;
+  editingProfileName.value = profile.profileName || 'Unnamed Profile';
+  // Focus the input on next tick after it's rendered
+  setTimeout(() => {
+    profileNameInput.value?.focus();
+  }, 0);
+};
+
+const handleProfileNameUpdate = async () => {
+  if (editingProfileId.value) {
+    try {
+      await window.electronAPI.updateProfileName(editingProfileId.value, editingProfileName.value);
+      // Refresh the profiles list
+      profiles.value = await window.electronAPI.getPlayerProfiles();
+    } catch (error) {
+      console.error('Failed to update profile name:', error);
+    }
+  }
+  // Use setTimeout to delay clearing the editing state
+  setTimeout(() => {
+    editingProfileId.value = null;
+    editingProfileName.value = '';
+  }, 100);
 };
 </script>
 
@@ -203,6 +227,9 @@ const handleConfigUpdate = ({ path, value }) => {
 .profile-item {
   @apply bg-zinc-700/50 hover:bg-zinc-600/50 cursor-pointer transition-colors duration-200;
   @apply rounded-sm overflow-hidden;
+  @apply border border-zinc-600;
+  width: 95%;
+  margin: 0 auto;
 }
 
 .profile-content {
@@ -233,5 +260,19 @@ const handleConfigUpdate = ({ path, value }) => {
 
 :deep(.je-label) {
   @apply text-gray-300;
+}
+
+.profile-name-input {
+  @apply bg-[#1f1f1f] text-white px-2 py-1 rounded-sm w-full;
+  @apply focus:outline-none focus:ring-1 focus:ring-blue-500;
+}
+
+.profiles-header {
+  @apply flex justify-end w-[95%] mx-auto mb-2;
+}
+
+.add-profile-btn {
+  @apply p-2 bg-zinc-700/50 hover:bg-zinc-600/50 transition-colors duration-200;
+  @apply border border-zinc-600 rounded-sm;
 }
 </style>

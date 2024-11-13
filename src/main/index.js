@@ -1,13 +1,19 @@
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
-import yaml from 'yaml';
 import sourceMapSupport from 'source-map-support';
 
 import { createMenu } from './menu.js';
 
 import MegaMindInstance from './MegaMindInstance.js';
 import Configuration from './state/Configuration.js';
+
+const configReplacements = {
+  app: app.getAppPath(),
+  resources: path.join(app.getAppPath(), 'resources'),
+  state: path.join(app.getAppPath(), 'resources', 'state'),
+  realms: path.join(app.getAppPath(), 'resources', 'realms'),
+};
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (process.env.ELECTRON_SQUIRREL_STARTUP) {
@@ -16,7 +22,7 @@ if (process.env.ELECTRON_SQUIRREL_STARTUP) {
 sourceMapSupport.install();
 
 let main;
-let config;
+let megamindConfig;
 let mainWindow;
 
 const createWindow = () => {
@@ -58,6 +64,50 @@ app.whenReady().then(() => {
   createMenu();
 });
 
+function initialize() {
+  const megamindConfigPath = Configuration.resolve('megamind.yaml');
+
+  if (!megamindConfigPath) {
+    writeToTerminal('Megamind Configuration not found.');
+    writeToTerminal("Ensure 'megamind.yaml' exists in the application resources directory.");
+    mainWindow.webContents.send('disable-connect');
+    return;
+  }
+
+  megamindConfig = new Configuration(megamindConfigPath, configReplacements);
+
+  if (megamindConfig.lastSelectedProfile) {
+    return loadProfile(megamindConfig.lastSelectedProfile);
+  }
+
+  // TODO: visual indicate where to create or select a profile
+  writeToTerminal('Create or select a profile in the upper right.');
+  mainWindow.webContents.send('disable-connect');
+}
+
+function loadProfile(profile) {
+  megamindConfig.lastSelectedProfile = profile;
+  megamindConfig.save();
+
+  const userConfig = new Configuration(profile, configReplacements);
+
+  if (!userConfig.realm || !fs.existsSync(userConfig.realm)) {
+    writeToTerminal('No realm config specified or file not found.');
+    return;
+  }
+
+  const realmConfig = new Configuration(userConfig.realm, configReplacements);
+
+  // TODO: if we already have a main instance, we should reuse it
+  main = new MegaMindInstance(mainWindow, userConfig, realmConfig);
+  writeToTerminal('Loaded profile: ' + path.basename(profile));
+  mainWindow.webContents.send('set-selected-profile', profile, userConfig.options);
+  mainWindow.webContents.send('enable-connect');
+}
+//
+// IPC Handlers
+//
+
 // This is called when the client has loaded and is ready to initialize
 ipcMain.on('client-loaded', () => {
   initialize();
@@ -65,64 +115,8 @@ ipcMain.on('client-loaded', () => {
 
 // This is called when the user selects a profile from the dropdown
 ipcMain.on('load-profile', (event, profile) => {
-  config.megamind = { ...config.megamind, lastSelectedProfile: profile };
-  config.save();
-
-  const userConfig = new Configuration(profile, {
-    realms: path.join(app.getAppPath(), 'resources', 'realms'),
-  });
-
-  if (!userConfig.realm || !fs.existsSync(userConfig.realm)) {
-    writeToTerminal('No realm config specified or file not found.');
-    return;
-  }
-
-  const realmConfig = new Configuration(userConfig.realm);
-
-  // TODO: if we already have a main instance, we should reuse it
-  main = new MegaMindInstance(mainWindow, userConfig, realmConfig);
-  writeToTerminal('Loaded profile: ' + path.basename(profile));
-  mainWindow.webContents.send('set-selected-profile', profile, userConfig.options);
-  mainWindow.webContents.send('enable-connect');
+  loadProfile(profile);
 });
-
-function initialize() {
-  const configPath = Configuration.resolve('megamind.yaml');
-
-  if (!configPath) {
-    writeToTerminal('Megamind Configuration not found.');
-    writeToTerminal("Ensure 'megamind.yaml' exists in the application resources directory.");
-    mainWindow.webContents.send('disable-connect');
-    return;
-  }
-
-  config = new Configuration(configPath);
-
-  if (config.megamind.lastSelectedProfile) {
-    ipcMain.emit('load-profile', null, config.megamind.lastSelectedProfile);
-    return;
-  }
-
-  const profilesPath = path.join(app.getAppPath(), 'resources', 'profiles');
-
-  try {
-    const files = fs.readdirSync(profilesPath);
-    const yamlFiles = files.filter((f) => f.endsWith('.yaml'));
-
-    if (yamlFiles.length === 0) {
-      writeToTerminal('No profile files found.');
-      writeToTerminal(`Add .yaml files to: ${profilesPath}`);
-      return;
-    }
-  } catch (err) {
-    writeToTerminal('No profile files found.');
-    writeToTerminal(`Add .yaml files to: ${profilesPath}`);
-    return;
-  }
-
-  writeToTerminal('Select a profile in the upper right.');
-  mainWindow.webContents.send('disable-connect');
-}
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -146,7 +140,7 @@ ipcMain.handle('create-new-profile', () => {
     return;
   }
 
-  const defaultConfig = new Configuration(defaultProfile);
+  const defaultConfig = new Configuration(defaultProfile, configReplacements);
   //const newProfilePath = path.join(app.getAppPath(), 'resources', 'profiles', `${defaultConfig.user.name}.yaml`);
 });
 
@@ -177,15 +171,12 @@ ipcMain.handle('get-player-profiles', () => {
     for (const file of files) {
       if (file.endsWith('.yaml') || file.endsWith('.yml')) {
         try {
-          const filePath = path.join(profilesPath, file);
-          const config = yaml.parse(fs.readFileSync(filePath, 'utf8'));
+          const profile = new Configuration(path.join(profilesPath, file), configReplacements);
 
-          if (config && config.user && config.user.name) {
+          if (profile) {
             profiles.push({
-              name: config.user.name,
-              fileName: file,
-              path: filePath,
-              character: config.character,
+              path: profile.filename,
+              options: profile.options,
             });
           }
         } catch (err) {

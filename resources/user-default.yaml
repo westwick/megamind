@@ -10,3 +10,10 @@ user:
 character:
   race: human
   class: warrior
+
+auto:
+  combat: true
+  heal: true
+  bless: true
+  get: true
+  sneak: false

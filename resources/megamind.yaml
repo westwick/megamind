@@ -4,5 +4,4 @@ debug:
 paths:
   resources: ${app}/resources
   data: ${app}/resources/state
-megamind:
-  lastSelectedProfile: /home/rayben/source/megamind-client/resources/profiles/soul-looping.yaml
+lastSelectedProfile: /home/rayben/source/megamind-client/resources/profiles/soul-looping.yaml
