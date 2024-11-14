@@ -13,7 +13,7 @@ import Configuration from '../state/Configuration.js';
 
 export default class PersistableEntity {
   static replacements = {
-    app: app.getPath('userData'),
+    app: app?.getPath('userData') || path.resolve('./'),
   };
 
   static _config = new Configuration('megamind.yaml', this.replacements);
