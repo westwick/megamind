@@ -146,4 +146,4 @@ async function generateData() {
   await realmData.save();
 }
 
-generateData();
+await generateData();

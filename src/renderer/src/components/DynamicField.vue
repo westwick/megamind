@@ -4,11 +4,27 @@
     <template v-if="isPrimitive">
       <label :for="fieldName" class="field-label">{{ formatLabel(fieldName) }}</label>
 
-      <input v-if="typeof fieldValue === 'string'" type="text" :value="fieldValue" maxlength="35" class="text-input" />
+      <input
+        v-if="typeof fieldValue === 'string'"
+        type="text"
+        :value="fieldValue"
+        maxlength="35"
+        class="text-input"
+        @input="handleChange($event.target.value)" />
 
-      <input v-else-if="typeof fieldValue === 'number'" type="number" :value="fieldValue" class="number-input" />
+      <input
+        v-else-if="typeof fieldValue === 'number'"
+        type="number"
+        :value="fieldValue"
+        class="number-input"
+        @input="handleChange(Number($event.target.value))" />
 
-      <input v-else-if="typeof fieldValue === 'boolean'" type="checkbox" :checked="fieldValue" class="checkbox-input" />
+      <input
+        v-else-if="typeof fieldValue === 'boolean'"
+        type="checkbox"
+        :checked="fieldValue"
+        class="checkbox-input"
+        @change="handleChange($event.target.checked)" />
     </template>
 
     <!-- Arrays and Objects -->
@@ -27,6 +43,7 @@
               :field-name="''"
               :field-value="item"
               :depth="depth + 1"
+              :path="`${fullPath}[${index}]`"
             />
           </template>
           <template v-else>
@@ -36,6 +53,7 @@
               :field-name="key"
               :field-value="val"
               :depth="depth + 1"
+              :path="`${fullPath}.${key}`"
             />
           </template>
         </div>
@@ -60,7 +78,13 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  path: {
+    type: String,
+    default: '',
+  },
 });
+
+const emit = defineEmits(['config-value-changed']);
 
 const expanded = ref(false);
 const isPrimitive = computed(() => {
@@ -76,6 +100,20 @@ const formatLabel = (str) => {
     .replace(/([A-Z])/g, ' $1')
     .replace(/^./, (str) => str.toUpperCase())
     .trim();
+};
+
+const fullPath = computed(() => {
+  if (!props.path) return props.fieldName;
+  if (!props.fieldName) return props.path;
+  return props.path === props.fieldName ? props.path : `${props.path}.${props.fieldName}`;
+});
+
+const handleChange = (newValue) => {
+  emit('config-value-changed', {
+    path: fullPath.value,
+    oldValue: props.fieldValue,
+    newValue: newValue,
+  });
 };
 </script>
 

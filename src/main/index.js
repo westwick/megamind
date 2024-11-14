@@ -8,11 +8,11 @@ import { createMenu } from './menu.js';
 import MegaMindInstance from './MegaMindInstance.js';
 import Configuration from './state/Configuration.js';
 
-const configReplacements = {
-  app: app.getAppPath(),
-  resources: path.join(app.getAppPath(), 'resources'),
-  state: path.join(app.getAppPath(), 'resources', 'state'),
-  realms: path.join(app.getAppPath(), 'resources', 'realms'),
+const appPaths = {
+  app: app.getPath('userData'),
+  resources: path.join(app.getPath('userData'), 'resources'),
+  state: path.join(app.getPath('userData'), 'resources', 'state'),
+  realms: path.join(app.getPath('userData'), 'resources', 'realms'),
 };
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -24,6 +24,8 @@ sourceMapSupport.install();
 let main;
 let megamindConfig;
 let mainWindow;
+
+// WINDOW CREATION
 
 const createWindow = () => {
   // Create the browser window.
@@ -64,19 +66,17 @@ app.whenReady().then(() => {
   createMenu();
 });
 
+// CODE
+
 function initialize() {
+  // Load the megamind config and halt if not found
   const megamindConfigPath = Configuration.resolve('megamind.yaml');
 
-  if (!megamindConfigPath) {
-    writeToTerminal('Megamind Configuration not found.');
-    writeToTerminal("Ensure 'megamind.yaml' exists in the application resources directory.");
-    mainWindow.webContents.send('disable-connect');
-    return;
-  }
+  megamindConfig = new Configuration(megamindConfigPath, appPaths);
+  megamindConfig.save(path.join(appPaths.resources, 'megamind.yaml'));
 
-  megamindConfig = new Configuration(megamindConfigPath, configReplacements);
-
-  if (megamindConfig.lastSelectedProfile) {
+  // load the last selected profile if it exists
+  if (megamindConfig.lastSelectedProfile && fs.existsSync(megamindConfig.lastSelectedProfile)) {
     return loadProfile(megamindConfig.lastSelectedProfile);
   }
 
@@ -85,28 +85,69 @@ function initialize() {
   mainWindow.webContents.send('disable-connect');
 }
 
-function loadProfile(profile) {
-  megamindConfig.lastSelectedProfile = profile;
+function loadProfile(profilePath) {
+  megamindConfig.lastSelectedProfile = profilePath;
   megamindConfig.save();
 
-  const userConfig = new Configuration(profile, configReplacements);
+  const userConfig = new Configuration(profilePath, appPaths);
 
-  if (!userConfig.realm || !fs.existsSync(userConfig.realm)) {
-    writeToTerminal('No realm config specified or file not found.');
+  if (!fs.existsSync(userConfig.realm)) {
+    const defaultBbsProfle = Configuration.resolve('realm-default.yaml');
+    const bbsConfig = new Configuration(defaultBbsProfle, appPaths);
+    bbsConfig.save(userConfig.realm);
+    writeToTerminal('Created default realm config: ' + userConfig.realm + ' please modify as needed.');
+  }
+
+  const realmConfig = new Configuration(userConfig.realm, appPaths);
+
+  if (main) {
+    main.updateUserOptions(userConfig.options, false);
+  } else {
+    main = new MegaMindInstance(mainWindow, userConfig, realmConfig, megamindConfig);
+  }
+
+  writeToTerminal('Loaded profile: ' + path.basename(profilePath));
+  mainWindow.webContents.send('set-selected-profile', profilePath, userConfig.serializedOptions);
+  mainWindow.webContents.send('enable-connect');
+}
+
+function createProfile() {
+  const defaultProfile = Configuration.resolve('user-default.yaml');
+
+  if (!defaultProfile) {
+    writeToTerminal('No default profile found.');
+    writeToTerminal("Ensure 'user-default.yaml' exists in the application resources directory.");
     return;
   }
 
-  const realmConfig = new Configuration(userConfig.realm, configReplacements);
+  const defaultConfig = new Configuration(defaultProfile, appPaths);
 
-  // TODO: if we already have a main instance, we should reuse it
-  main = new MegaMindInstance(mainWindow, userConfig, realmConfig);
-  writeToTerminal('Loaded profile: ' + path.basename(profile));
-  mainWindow.webContents.send('set-selected-profile', profile, userConfig.options);
-  mainWindow.webContents.send('enable-connect');
+  const newProfilePath = path.join(app.getPath('userData'), 'resources', 'profiles');
+  const newProfileName = path.join(newProfilePath, `${new Date().toISOString()}.yaml`);
+
+  if (!fs.existsSync(newProfilePath)) {
+    fs.mkdirSync(newProfilePath, { recursive: true });
+  }
+
+  defaultConfig.save(newProfileName);
+
+  const bbsPath = path.join(app.getPath('userData'), 'resources', 'realms');
+  const bbsName = path.join(bbsPath, 'bbs.yaml');
+
+  if (!fs.existsSync(bbsName)) {
+    if (!fs.existsSync(bbsPath)) {
+      fs.mkdirSync(bbsPath, { recursive: true });
+    }
+
+    const defaultBbsProfle = Configuration.resolve('realm-default.yaml');
+    const bbsConfig = new Configuration(defaultBbsProfle, appPaths);
+    bbsConfig.save(bbsName);
+  }
+
+  return { path: newProfileName, options: defaultConfig.serializedOptions };
 }
-//
+
 // IPC Handlers
-//
 
 // This is called when the client has loaded and is ready to initialize
 ipcMain.on('client-loaded', () => {
@@ -116,6 +157,12 @@ ipcMain.on('client-loaded', () => {
 // This is called when the user selects a profile from the dropdown
 ipcMain.on('load-profile', (event, profile) => {
   loadProfile(profile);
+});
+
+ipcMain.on('save-profile', (event, config, save) => {
+  if (main) {
+    main.updateUserOptions(config, save);
+  }
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -132,16 +179,7 @@ ipcMain.handle('load-config', () => {
 });
 
 ipcMain.handle('create-new-profile', () => {
-  const defaultProfile = Configuration.resolve('user-default.yaml');
-
-  if (!defaultProfile) {
-    writeToTerminal('No default profile found.');
-    writeToTerminal("Ensure 'user-default.yaml' exists in the application resources directory." );
-    return;
-  }
-
-  const defaultConfig = new Configuration(defaultProfile, configReplacements);
-  //const newProfilePath = path.join(app.getAppPath(), 'resources', 'profiles', `${defaultConfig.user.name}.yaml`);
+  return createProfile();
 });
 
 ipcMain.on('connect-to-server', (event) => {
@@ -155,28 +193,32 @@ ipcMain.on('send-data', (event, data) => {
 
 ipcMain.handle('get-player-config', () => {
   if (main) {
-    return main.userConfig.options;
+    return main.userConfig.serializedOptions;
   }
 
   return undefined;
 });
 
 ipcMain.handle('get-player-profiles', () => {
-  const profilesPath = path.join(app.getAppPath(), 'resources', 'profiles');
+  const profilesPath = path.join(app.getPath('userData'), 'resources', 'profiles');
   const profiles = [];
 
   try {
+    if (!fs.existsSync(profilesPath)) {
+      return profiles;
+    }
+
     const files = fs.readdirSync(profilesPath);
 
     for (const file of files) {
       if (file.endsWith('.yaml') || file.endsWith('.yml')) {
         try {
-          const profile = new Configuration(path.join(profilesPath, file), configReplacements);
+          const profile = new Configuration(path.join(profilesPath, file), appPaths);
 
           if (profile) {
             profiles.push({
               path: profile.filename,
-              options: profile.options,
+              options: profile.serializedOptions,
             });
           }
         } catch (err) {

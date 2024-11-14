@@ -8,8 +8,8 @@ try {
 
 import fs from 'fs';
 import yaml from 'yaml';
-import process from 'process';
 import Ajv from 'ajv';
+import os from 'os';
 
 import { resolve, join, isAbsolute } from 'path';
 import { homedir } from 'os';
@@ -30,6 +30,14 @@ export default class Configuration {
 
   get options() {
     return this.#options;
+  }
+
+  set options(options) {
+    this.#options = options;
+  }
+
+  get serializedOptions() {
+    return JSON.parse(JSON.stringify(this.#options));
   }
 
   /**

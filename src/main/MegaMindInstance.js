@@ -20,10 +20,10 @@ export default class MegaMindInstance extends EventEmitter {
     return this.#realmConfig;
   }
 
-  constructor(mainWindow, userConfig, realmConfig) {
+  constructor(mainWindow, userConfig, realmConfig, megamindConfig) {
     super();
 
-    this.config = new Configuration('megamind.yaml');
+    this.config = megamindConfig;
     this.mainWindow = mainWindow;
 
     this.#userConfig = userConfig;
@@ -113,6 +113,13 @@ export default class MegaMindInstance extends EventEmitter {
     this.forwardEventToRenderer('update-player-stats');
     this.forwardEventToRenderer('new-room');
     this.forwardEventToRenderer('update-online-users');
+  }
+
+  updateUserOptions(options, save) {
+    this.#userConfig.options = options;
+    if (save) {
+      this.#userConfig.save();
+    }
   }
 
   writeToTerminal(data) {

@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import lockfile from 'proper-lockfile';
+import { app } from 'electron';
 
 import DocumentData from './DocumentData.js';
 
@@ -11,7 +12,11 @@ import PersistableProperty from './PersistableProperty.js';
 import Configuration from '../state/Configuration.js';
 
 export default class PersistableEntity {
-  static _config = new Configuration('megamind.yaml');
+  static replacements = {
+    app: app.getPath('userData'),
+  };
+
+  static _config = new Configuration('megamind.yaml', this.replacements);
   static _datastores = {};
 
   _document = {};

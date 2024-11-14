@@ -100,6 +100,9 @@
         </div>
       </div>
       <div class="flex items-center">
+        <div v-if="showSaveButton" class="icon-container save-button" title="Save" @click="handleSave">
+          <Save class="icon" />
+        </div>
         <div
           class="icon-container settings-button"
           :class="{ active: isSettingsOpen }"
@@ -112,7 +115,7 @@
     </div>
     <Transition name="slide">
       <div v-show="isSettingsOpen" ref="settingsArea" class="settings-area">
-        <AppSettings />
+        <AppSettings @config-dirty="onConfigDirty" />
       </div>
     </Transition>
   </div>
@@ -135,12 +138,14 @@ import {
   Hand,
   Footprints,
   User,
+  Save,
 } from 'lucide-vue-next';
 
 const store = useStore();
 
 const connectEnabled = ref(true);
 
+const showSaveButton = ref(false);
 const isConnectedToServer = ref(false);
 const isStopMoving = ref(true);
 const isSettingsOpen = computed(() => store.state.isSettingsOpen);
@@ -154,14 +159,16 @@ const autoSneak = computed(() => store.state.playerConfig.auto.autoSneak);
 
 const settingsArea = ref(null);
 
-const handleClickOutside = (event) => {
-  if (isSettingsOpen.value) {
-    // Check if click is outside both the settings button and settings area
-    const settingsButton = document.querySelector('.settings-button');
-    if (!settingsButton.contains(event.target) && !settingsArea.value.contains(event.target)) {
-      store.commit('SET_IS_SETTINGS_OPEN', false);
-    }
-  }
+const config = ref(null);
+
+const onConfigDirty = (newConfig) => {
+  config.value = newConfig;
+  showSaveButton.value = true;
+};
+
+const handleSave = () => {
+  window.electronAPI.saveProfile(JSON.parse(JSON.stringify(config.value)), true);
+  showSaveButton.value = false;
 };
 
 onMounted(() => {
@@ -181,7 +188,23 @@ window.electronAPI.onEnableConnect(() => {
 });
 
 const toggleSettings = () => {
+  // save the current config when settings are closed
+  if (isSettingsOpen.value) {
+    window.electronAPI.saveProfile(JSON.parse(JSON.stringify(config.value)), false);
+  }
+
   store.commit('SET_IS_SETTINGS_OPEN', !isSettingsOpen.value);
+};
+
+const handleClickOutside = (event) => {
+  if (isSettingsOpen.value) {
+    // Check if click is outside both the settings button and settings area
+    const settingsButton = document.querySelector('.settings-button');
+
+    if (!settingsButton.contains(event.target) && !settingsArea.value.contains(event.target)) {
+      toggleSettings();
+    }
+  }
 };
 
 const toggleAutoAction = (actionName) => {
@@ -291,6 +314,10 @@ const handleStopMoving = () => {
 }
 
 .icon-active-red .icon {
+  @apply text-red-500;
+}
+
+.save-button {
   @apply text-red-500;
 }
 </style>
