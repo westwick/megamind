@@ -32,6 +32,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
+        vue: 'vue/dist/vue.esm-bundler.js',
       },
     },
     optimizeDeps: {

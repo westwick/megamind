@@ -4,7 +4,18 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   loadConfig: () => ipcRenderer.invoke('load-config'),
+
+  // ui indications
   clientLoaded: () => ipcRenderer.send('client-loaded'),
+  onDisableConnect: (callback) => ipcRenderer.on('disable-connect', callback),
+  onEnableConnect: (callback) => ipcRenderer.on('enable-connect', callback),
+
+  // profile management
+  getPlayerProfiles: () => ipcRenderer.invoke('get-player-profiles'),
+  onSetSelectedProfile: (callback) => ipcRenderer.on('set-selected-profile', callback),
+  createNewProfile: () => ipcRenderer.invoke('create-new-profile'),
+  saveProfile: (config, save) => ipcRenderer.send('save-profile', config, save),
+  loadProfile: (profile) => ipcRenderer.send('load-profile', profile),
 
   // server and stuff
   connectToServer: (data) => ipcRenderer.send('connect-to-server', data),

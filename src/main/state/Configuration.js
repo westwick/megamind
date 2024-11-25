@@ -8,8 +8,8 @@ try {
 
 import fs from 'fs';
 import yaml from 'yaml';
-import process from 'process';
 import Ajv from 'ajv';
+import os from 'os';
 
 import { resolve, join, isAbsolute } from 'path';
 import { homedir } from 'os';
@@ -19,6 +19,7 @@ export default class Configuration {
 
   #watcher;
   #options;
+  #originalValues;
 
   static #defaultPaths = [
     resolve('.'), // ./
@@ -29,6 +30,14 @@ export default class Configuration {
 
   get options() {
     return this.#options;
+  }
+
+  set options(options) {
+    this.#options = options;
+  }
+
+  get serializedOptions() {
+    return JSON.parse(JSON.stringify(this.#options));
   }
 
   /**
@@ -57,14 +66,6 @@ export default class Configuration {
       replacements = null,
       loadCallback = null,
       errorCallback = null;
-
-    this.replacements = {};
-
-    if (app) {
-      this.replacements = { app: app.getAppPath() };
-    } else {
-      this.replacements = { app: process.cwd() };
-    }
 
     // Sort remaining arguments by type
     for (const arg of args) {
@@ -104,12 +105,9 @@ export default class Configuration {
       target.schema = yaml.parse(contents);
     }
 
-    // override replacements, loadCallback, and errorCallback if provided
-    if (args.length > 0) {
-      target.replacements = { ...target.replacements, ...replacements };
-      target.loadCallback = loadCallback;
-      target.errorCallback = errorCallback;
-    }
+    target.replacements = replacements || target.replacements;
+    target.loadCallback = loadCallback || target.loadCallback;
+    target.errorCallback = errorCallback || target.errorCallback;
 
     if (instance) {
       return instance;
@@ -151,16 +149,48 @@ export default class Configuration {
    * @returns {void}
    * @throws {Error} If unable to write to file
    */
-  save() {
-    if (!this.filename) {
-      throw new Error('No config file specified');
-    }
+  save(filename = null) {
+    filename = filename || this.filename;
 
     try {
-      const yamlStr = yaml.stringify(this.#options);
-      fs.writeFileSync(this.filename, yamlStr, 'utf8');
+      // Create a deep copy of options for saving
+      const saveOptions = JSON.parse(JSON.stringify(this.#options));
+
+      // Restore original values before saving
+      this.#restoreOriginals(saveOptions);
+
+      const yamlStr = yaml.stringify(saveOptions);
+      fs.writeFileSync(filename, yamlStr, 'utf8');
     } catch (error) {
       throw new Error(`Failed to save config: ${error.message}`);
+    }
+
+    if (filename && this.filename !== filename) {
+      // Stop watching the current file before switching to a new one
+      if (this.#watcher) {
+        this.#watcher.unref();
+        this.#watcher = null;
+      }
+
+      this.filename = filename;
+      this.#watch(this.filename);
+    }
+  }
+
+  /**
+   * Restore original values in the configuration object
+   * @param {Object} obj - The object to restore original values in
+   * @param {string} [path=''] - The current path in the object (used for recursion)
+   * @private
+   */
+  #restoreOriginals(obj, path = '') {
+    for (const [key, value] of Object.entries(obj)) {
+      const fullPath = path ? `${path}.${key}` : key;
+      if (this.#originalValues[fullPath]) {
+        obj[key] = this.#originalValues[fullPath];
+      } else if (typeof value === 'object' && value !== null) {
+        this.#restoreOriginals(value, fullPath);
+      }
     }
   }
 
@@ -192,20 +222,14 @@ export default class Configuration {
   #loadYaml(file) {
     try {
       let yamlContent = fs.readFileSync(file, 'utf8');
+      const data = yaml.parse(yamlContent);
+      this.#options = data;
+      this.#originalValues = {};
 
       // Handle variable replacements like {VAR} if replacements provided
       if (this.replacements) {
-        yamlContent = yamlContent.replace(/\{(\w+)\}/g, (match, key) => {
-          if (Object.prototype.hasOwnProperty.call(this.replacements, key)) {
-            return this.replacements[key];
-          }
-
-          return match;
-        });
+        this.#processReplacements(this.#options);
       }
-
-      const data = yaml.parse(yamlContent);
-      this.#options = data; // we set the options anyway so that we can re-validate if changed
 
       // validate the YAML file against a schema if provided
       if (this.schema) {
@@ -224,6 +248,27 @@ export default class Configuration {
     return null;
   }
 
+  #processReplacements(obj, path = '') {
+    for (const [key, value] of Object.entries(obj)) {
+      const fullPath = path ? `${path}.${key}` : key;
+      if (typeof value === 'string') {
+        const replaced = value.replace(/\${(\w+)\}/g, (match, replaceKey) => {
+          if (Object.prototype.hasOwnProperty.call(this.replacements, replaceKey)) {
+            // Store original value before replacement using full path
+            this.#originalValues[fullPath] = value;
+            return this.replacements[replaceKey];
+          }
+          return match;
+        });
+        if (replaced !== value) {
+          obj[key] = replaced;
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        this.#processReplacements(value, fullPath);
+      }
+    }
+  }
+
   #watch(file) {
     const errors = this.#loadYaml(file);
 
@@ -235,7 +280,6 @@ export default class Configuration {
 
     this.#watcher = fs.watchFile(file, (curr, prev) => {
       if (curr.mtime !== prev.mtime) {
-        console.log('Reloading config file...');
         const errors = this.#loadYaml(file);
 
         if (errors && this.errorCallback) {

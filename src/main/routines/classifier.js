@@ -2,7 +2,7 @@
 /* eslint-disable max-len */
 /* eslint-disable no-control-regex */
 
-import RealmData from '../entities/realmData.js';
+import RealmData from '../entities/RealmData.js';
 
 const realmData = await RealmData.create('default');
 

@@ -1,7 +1,19 @@
 # DO NOT CHANGE THIS FILE
 # This is the default user config file
-default: true
+profileName: "Default Profile"
+realm: "${realms}/bbs.yaml"
 
 user:
-  name: Default User
+  name: username
   password: password
+
+character:
+  race: human
+  class: warrior
+
+auto:
+  combat: true
+  heal: true
+  bless: true
+  get: true
+  sneak: false

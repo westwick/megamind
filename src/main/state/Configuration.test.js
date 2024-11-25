@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { writeFileSync, unlinkSync } from 'fs';
+import os from 'os';
 import yaml from 'yaml';
 import Configuration from './Configuration.js';
 
@@ -52,6 +53,10 @@ describe('Configuration', () => {
     },
   };
 
+  const replacements = {
+    app: os.tmpdir(),
+  };
+
   let loadCallback = () => {};
   let errorCallback = (errors) => {
     expect(errors).toBeTruthy();
@@ -68,7 +73,7 @@ describe('Configuration', () => {
     writeFileSync(configPath, yaml.stringify(testConfig));
     writeFileSync(schemaPath, yaml.stringify(testSchema));
 
-    const config = new Configuration(configPath, schemaPath, loadCallback, errorCallback);
+    const config = new Configuration(configPath, schemaPath, replacements, loadCallback, errorCallback);
     expect(config.options).toEqual(testConfig);
 
     unlinkSync(configPath);
@@ -92,7 +97,7 @@ describe('Configuration', () => {
     writeFileSync(configPath, yaml.stringify(invalidConfig));
     writeFileSync(schemaPath, yaml.stringify(testSchema));
 
-    const config = new Configuration(configPath, schemaPath, loadCallback, errorCallback);
+    const config = new Configuration(configPath, schemaPath, replacements, loadCallback, errorCallback);
     expect(config.options).toEqual(invalidConfig);
 
     unlinkSync(configPath);
@@ -103,11 +108,11 @@ describe('Configuration', () => {
     const configWithVars = {
       server: {
         port: 3000,
-        host: '{HOST}',
+        host: '${HOST}',
       },
       database: {
-        url: '{DB_URL}',
-        name: '{DB_NAME}',
+        url: '${DB_URL}',
+        name: '${DB_NAME}',
       },
     };
 
@@ -139,7 +144,7 @@ describe('Configuration', () => {
     let first = true;
 
     await new Promise((resolve) => {
-      new Configuration(configPath, schemaPath, (options) => {
+      new Configuration(configPath, schemaPath, replacements, (options) => {
         if (first) {
           expect(options.server.port).toBe(3000);
           first = false;

@@ -1,76 +1,270 @@
 <template>
-  <div class="flex app-settings">
+  <div class="flex app-settings" @click.stop>
     <ul class="menu-list">
       <li v-for="tab in tabs" :key="tab.id">
-        <a
-          href="#"
-          class="menu-item"
-          :class="{ active: activeTab === tab.id }"
-          @click.prevent="setActiveTab(tab.id)"
-        >
+        <a href="#" class="menu-item" :class="{ active: activeTab === tab.id }" @click.prevent="setActiveTab(tab.id)">
           {{ tab.name }}
         </a>
       </li>
     </ul>
     <div class="content-area">
+      <div v-if="activeTab === 'profiles'">
+        <div class="profiles-section">
+          <div class="profiles-header">
+            <button class="add-profile-btn" @click="handleAddProfile">
+              <Plus class="w-5 h-5" />
+            </button>
+          </div>
+          <div class="profiles-list">
+            <div
+              v-for="profile in profiles"
+              :key="profile.path"
+              class="profile-item"
+              :class="{ 'profile-selected': profile.path === selectedProfile }"
+              @click="!editingProfileId && handleProfileSelect(profile)"
+            >
+              <div class="profile-content flex">
+                <img
+                  :src="images.races[profile?.options?.character?.race || 'human']"
+                  alt="Race Image"
+                  class="profile-image"
+                />
+                <img
+                  :src="images.classes[profile?.options?.character?.class || 'warrior']"
+                  alt="Class Image"
+                  class="profile-image"
+                />
+                <div class="profile-details">
+                  <span
+                    v-if="!editingProfileId || editingProfileId !== profile.path"
+                    class="profile-name"
+                    @click.stop="startEditing(profile)"
+                  >
+                    {{ profile?.options?.profileName || 'Unnamed Profile' }}
+                    <Pencil class="w-4 h-4 inline-block ml-2 text-gray-400" />
+                  </span>
+                  <input
+                    v-else
+                    :ref="
+                      (el) => {
+                        if (el) profileNameInput = el;
+                      }
+                    "
+                    v-model="editingProfileName"
+                    type="text"
+                    class="profile-name-input"
+                    @blur="handleProfileNameUpdate"
+                    @keyup.enter="handleProfileNameUpdate"
+                    @click.stop
+                  />
+                </div>
+              </div>
+              <div class="profile-divider"></div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div v-if="activeTab === 'general'">
-        <p class="content-text">General settings for your game experience.</p>
-        <!-- Add more general settings content here -->
-      </div>
-
-      <div v-if="activeTab === 'health'">
-        <HealthManaSettings />
-      </div>
-
-      <div v-if="activeTab === 'combat'">
-        <p class="content-text">
-          Adjust your combat preferences and strategies.
-        </p>
-        <!-- Add combat settings here -->
-      </div>
-
-      <div v-if="activeTab === 'spells'">
-        <p class="content-text">
-          Manage your spellbook and spell configurations.
-        </p>
-        <!-- Add spell management content here -->
-      </div>
-
-      <div v-if="activeTab === 'party'">
-        <p class="content-text">Set up your party preferences and roles.</p>
-        <!-- Add party-related settings here -->
-      </div>
-
-      <div v-if="activeTab === 'pvp'">
-        <p class="content-text">Customize your PVP settings and strategies.</p>
-        <!-- Add PVP-specific content here -->
-      </div>
-
-      <div v-if="activeTab === 'cash'">
-        <p class="content-text">Manage your in-game currency and purchases.</p>
-        <!-- Add cash/economy related content here -->
+        <DynamicSettings :settings="config[getConfigPath(activeTab)]" @config-value-changed="handleConfigChange" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import HealthManaSettings from "./settings/HealthManaSettings.vue";
+import { ref, onMounted } from 'vue';
+import DynamicSettings from './DynamicSettings.vue';
+import { useStore } from 'vuex';
+import { Plus, Pencil } from 'lucide-vue-next';
 
-const activeTab = ref("general");
+const store = useStore();
+const activeTab = ref('');
+const profiles = ref([]);
+const selectedProfile = ref(null);
+const config = ref({
+  user: {},
+  combat: {},
+  spells: {},
+  party: {},
+  pvp: {},
+  cash: {},
+});
+
 const tabs = [
-  { id: "general", name: "General" },
-  { id: "health", name: "Health & Mana" },
-  { id: "combat", name: "Combat" },
-  { id: "spells", name: "Spells" },
-  { id: "party", name: "Party" },
-  { id: "pvp", name: "PVP" },
-  { id: "cash", name: "Cash" },
+  { id: 'profiles', name: 'Profiles', configPath: null },
+  { id: 'general', name: 'General', configPath: 'user' },
+  { id: 'health', name: 'Health & Mana', configPath: 'health' },
+  { id: 'combat', name: 'Combat', configPath: 'combat' },
+  { id: 'spells', name: 'Spells', configPath: 'spells' },
+  { id: 'party', name: 'Party', configPath: 'party' },
+  { id: 'pvp', name: 'PvP', configPath: 'pvp' },
+  { id: 'cash', name: 'Cash Shop', configPath: 'cash' },
 ];
 
-const setActiveTab = (tabId) => {
+const getConfigPath = (tab) => {
+  const foundTab = tabs.find((t) => t.id === tab);
+  return foundTab?.configPath;
+};
+
+onMounted(async () => {
+  setActiveTab('profiles');
+});
+
+const setActiveTab = async (tabId) => {
   activeTab.value = tabId;
+
+  if (tabId === 'profiles') {
+    // Refresh the profiles list
+    profiles.value = await window.electronAPI.getPlayerProfiles();
+  }
+};
+
+const handleProfileSelect = (profile) => {
+  if (editingProfileId.value) return;
+
+  window.electronAPI.loadProfile(profile.path);
+  selectedProfile.value = profile.path;
+  store.commit('SET_IS_SETTINGS_OPEN', false);
+};
+
+window.electronAPI.onSetSelectedProfile((event, profilePath, options) => {
+  selectedProfile.value = profilePath;
+  config.value = options;
+  // TODO: if current config is dirty, raise a prompt to save it
+});
+
+const handleAddProfile = async () => {
+  const profile = await window.electronAPI.createNewProfile();
+  profiles.value = await window.electronAPI.getPlayerProfiles();
+  window.electronAPI.loadProfile(profile.path);
+};
+
+const handleConfigChange = ({ path, oldValue, newValue }) => {
+  // Split the path into parts
+  const parts = path
+    .split('.')
+    .map((part) => {
+      // Handle array notation like [0]
+      const match = part.match(/(\w+)\[(\d+)\]/);
+      if (match) {
+        return [match[1], match[2]];
+      }
+      return part;
+    })
+    .flat();
+
+  // Create a reference to the parent object
+  let current = config.value[getConfigPath(activeTab.value)];
+  for (let i = 0; i < parts.length - 1; i++) {
+    current = current[parts[i]];
+  }
+
+  // Update the value
+  const lastPart = parts[parts.length - 1];
+  current[lastPart] = newValue;
+
+  emit('config-dirty', config.value);
+};
+
+const emit = defineEmits(['config-dirty']);
+
+const editingProfileId = ref(null);
+const editingProfileName = ref('');
+const profileNameInput = ref(null);
+
+const startEditing = (profile) => {
+  editingProfileId.value = profile.path;
+  editingProfileName.value = profile.options.profileName || 'Unnamed Profile';
+  // Focus the input on next tick after it's rendered
+  setTimeout(() => {
+    profileNameInput.value?.focus();
+  }, 0);
+};
+
+const handleProfileNameUpdate = async () => {
+  if (editingProfileId.value) {
+    // Find the profile being edited
+    const profile = profiles.value.find((p) => p.path === editingProfileId.value);
+
+    if (profile) {
+      profile.options.profileName = editingProfileName.value;
+      await window.electronAPI.saveProfile(JSON.parse(JSON.stringify(profile.options)), true);
+      // Refresh the profiles list
+      profiles.value = await window.electronAPI.getPlayerProfiles();
+    }
+  }
+  // Use setTimeout to delay clearing the editing state
+  setTimeout(() => {
+    editingProfileId.value = null;
+    editingProfileName.value = '';
+  }, 100);
+};
+
+// Race imports
+import humanImage from '../assets/images/human.jpg'
+import dwarfImage from '../assets/images/dwarf.jpg'
+import gnomeImage from '../assets/images/gnome.jpg'
+import halflingImage from '../assets/images/halfling.jpg'
+import elfImage from '../assets/images/elf.jpg'
+import halfelfImage from '../assets/images/halfelf.jpg'
+import darkelfImage from '../assets/images/darkelf.jpg'
+import halforcImage from '../assets/images/halforc.jpg'
+import goblinImage from '../assets/images/goblin.jpg'
+import halfogreImage from '../assets/images/halfogre.jpg'
+import kangImage from '../assets/images/kang.jpg'
+import nekojinImage from '../assets/images/nekojin.jpg'
+import gauntoneImage from '../assets/images/gauntone.jpg'
+
+// Class imports
+import warriorImage from '../assets/images/warrior.jpg'
+import witchunterImage from '../assets/images/witchunter.jpg'
+import paladinImage from '../assets/images/paladin.jpg'
+import clericImage from '../assets/images/cleric.jpg'
+import priestImage from '../assets/images/priest.jpg'
+import missionaryImage from '../assets/images/missionary.jpg'
+import ninjaImage from '../assets/images/ninja.jpg'
+import thiefImage from '../assets/images/thief.jpg'
+import bardImage from '../assets/images/bard.jpg'
+import gypsyImage from '../assets/images/gypsy.jpg'
+import warlockImage from '../assets/images/warlock.jpg'
+import mageImage from '../assets/images/mage.jpg'
+import druidImage from '../assets/images/druid.jpg'
+import rangerImage from '../assets/images/ranger.jpg'
+import mysticImage from '../assets/images/mystic.jpg'
+
+const images = {
+  races: {
+    human: humanImage,
+    dwarf: dwarfImage,
+    gnome: gnomeImage,
+    halfling: halflingImage,
+    elf: elfImage,
+    halfelf: halfelfImage,
+    darkelf: darkelfImage,
+    halforc: halforcImage,
+    goblin: goblinImage,
+    halfogre: halfogreImage,
+    kang: kangImage,
+    nekojin: nekojinImage,
+    gauntone: gauntoneImage
+  },
+  classes: {
+    warrior: warriorImage,
+    witchunter: witchunterImage,
+    paladin: paladinImage,
+    cleric: clericImage,
+    priest: priestImage,
+    missionary: missionaryImage,
+    ninja: ninjaImage,
+    thief: thiefImage,
+    bard: bardImage,
+    gypsy: gypsyImage,
+    warlock: warlockImage,
+    mage: mageImage,
+    druid: druidImage,
+    ranger: rangerImage,
+    mystic: mysticImage
+  }
 };
 </script>
 
@@ -111,5 +305,60 @@ const setActiveTab = (tabId) => {
 
 .settings-label {
   @apply text-gray-200 mb-1 w-32 text-sm;
+}
+
+.profiles-list {
+  @apply space-y-1 mt-4;
+}
+
+.profile-item {
+  @apply bg-zinc-700/50 hover:bg-zinc-600/50 cursor-pointer transition-colors duration-200;
+  @apply rounded-sm overflow-hidden;
+  @apply border border-zinc-600;
+  width: 95%;
+  margin: 0 auto;
+}
+
+.profile-content {
+  @apply px-4 py-3 flex flex-row items-center;
+}
+
+.profile-image {
+  @apply w-10 h-10 mr-2;
+}
+
+/* Add these styles for the JSON editor */
+:deep(.je-object__title) {
+  @apply text-gray-200 text-lg font-medium mb-4;
+}
+
+:deep(.je-object__container) {
+  @apply bg-zinc-700/50 p-4 rounded-sm;
+}
+
+:deep(.form-control) {
+  @apply bg-zinc-600 border-zinc-500 text-gray-200;
+}
+
+:deep(.form-control:focus) {
+  @apply border-blue-500 ring-1 ring-blue-500;
+}
+
+:deep(.je-label) {
+  @apply text-gray-300;
+}
+
+.profile-name-input {
+  @apply bg-[#1f1f1f] text-white px-2 py-1 rounded-sm w-full;
+  @apply focus:outline-none focus:ring-1 focus:ring-blue-500;
+}
+
+.profiles-header {
+  @apply flex justify-end w-[95%] mx-auto mb-2;
+}
+
+.add-profile-btn {
+  @apply p-2 bg-zinc-700/50 hover:bg-zinc-600/50 transition-colors duration-200;
+  @apply border border-zinc-600 rounded-sm;
 }
 </style>

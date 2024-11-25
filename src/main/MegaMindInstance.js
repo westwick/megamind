@@ -20,18 +20,14 @@ export default class MegaMindInstance extends EventEmitter {
     return this.#realmConfig;
   }
 
-  constructor(mainWindow, userConfigPath, realmConfigPath) {
+  constructor(mainWindow, userConfig, realmConfig, megamindConfig) {
     super();
 
+    this.config = megamindConfig;
     this.mainWindow = mainWindow;
 
-    try {
-      // TODO: add in schema validation
-      this.#userConfig = new Configuration(userConfigPath);
-      this.#realmConfig = new Configuration(realmConfigPath);
-    } catch (e) {
-      this.writeToTerminal('Error loading config: ' + e);
-    }
+    this.#userConfig = userConfig;
+    this.#realmConfig = realmConfig;
 
     this.gameState = new GameState(this);
     this.playerStatsInstance = PlayerStats;
@@ -117,6 +113,13 @@ export default class MegaMindInstance extends EventEmitter {
     this.forwardEventToRenderer('update-player-stats');
     this.forwardEventToRenderer('new-room');
     this.forwardEventToRenderer('update-online-users');
+  }
+
+  updateUserOptions(options, save) {
+    this.#userConfig.options = options;
+    if (save) {
+      this.#userConfig.save();
+    }
   }
 
   writeToTerminal(data) {
