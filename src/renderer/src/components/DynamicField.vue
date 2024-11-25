@@ -117,59 +117,42 @@ const handleChange = (newValue) => {
 };
 </script>
 
-<style scoped>
+<style>
 .field {
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  @apply mb-2 flex items-center gap-2;
 }
 
 .field-label {
-  margin-bottom: 0;
-  min-width: 120px;
+  @apply mb-0 min-w-[120px];
 }
 
 .text-input,
 .number-input {
-  background-color: #1f1f1f;
-  color: white;
-  border: 1px solid #333;
-  padding: 0.25rem;
-  border-radius: 4px;
+  @apply bg-[#1f1f1f] text-white border border-[#333] p-1 rounded;
 }
 
 .text-input {
-  width: 35ch;
+  @apply w-[35ch];
 }
 
 .number-input {
-  width: 8ch;
+  @apply w-[8ch];
 }
 
 .checkbox-input {
-  accent-color: #1f1f1f;
+  @apply accent-[#1f1f1f];
 }
 
 .expandable-section {
-  margin: 0.5rem 0;
+  @apply my-2;
 }
 
 .section-header {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  @apply cursor-pointer flex items-center gap-2;
 }
 
 .triangle {
-  display: inline-block;
-  transition: transform 0.2s;
-  background-color: #1f1f1f !important;
-  color: white;
-  padding: 0 4px;
-  border-radius: 2px;
-  user-select: none;
+  @apply inline-block transition-transform duration-200 bg-[#1f1f1f] text-white px-1 rounded select-none;
   -webkit-text-stroke: 0px white;
   -webkit-text-fill-color: white;
   /* Force remove any default background */
@@ -180,10 +163,10 @@ const handleChange = (newValue) => {
 }
 
 .triangle.expanded {
-  transform: rotate(90deg);
+  @apply rotate-90;
 }
 
 .section-content {
-  margin-top: 0.5rem;
+  @apply mt-2;
 }
 </style>

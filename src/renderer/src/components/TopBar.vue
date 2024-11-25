@@ -318,6 +318,6 @@ const handleStopMoving = () => {
 }
 
 .save-button {
-  @apply text-red-500;
+  @apply text-yellow-500;
 }
 </style>
