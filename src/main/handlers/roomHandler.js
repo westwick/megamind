@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import Handler from './Handler.js';
 
 class RoomHandler extends Handler {
@@ -50,6 +51,7 @@ class RoomHandler extends Handler {
     this.eventBus.on('new-room', (event) => {
       this.handleAutoGetItems(event);
     });
+
   }
 
   updateRoomExits = (message) => {
@@ -85,6 +87,7 @@ class RoomHandler extends Handler {
     }
   };
 
+  /*
   updateRoomItems = (event) => {
     const message = event.message;
     if (
@@ -99,6 +102,7 @@ class RoomHandler extends Handler {
       this.eventBus.emit('new-room-items', items);
     }
   };
+  */
 
   updateRoomEntities = (event) => {
     if (
