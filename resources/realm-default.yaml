@@ -1,28 +1,22 @@
-# DO NOT CHANGE THIS FILE
-# This is the default realm config
-default: true
-
 bbs:
   name: Default Realm
   host: localhost
   port: 23
-
 login:
-  - message: "Please enter your username or \"new\":"
+  - message: 'Please enter your username or "new":'
     command: "{user.name}"
   - message: "Please enter your password:"
     command: "{user.password}"
   - message: "Please enter your selection:"
-    command: "P"
+    command: P
   - message: "Please select a realm:"
     command: "1"
   - message: "Please select a character:"
     command: "1"
-  - message: "(N)onstop, (Q)uit, or (C)ontinue?"
+  - message: (N)onstop, (Q)uit, or (C)ontinue?
     command: ""
-
 gameEntry:
   - message: "[MAJORMUD]:"
-    command: "enter"
+    command: enter
   - message: "[PARADIGM]:"
-    command: "enter"
+    command: enter

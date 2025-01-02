@@ -1,15 +1,17 @@
+/* eslint-disable prettier/prettier */
 import { parse } from 'ansicolor';
 import RoomHandler from '../handlers/roomHandler.js';
 import ConversationHandler from '../handlers/conversationHandler.js';
 import CombatHandler from '../handlers/combatHandler.js';
 import HealthHandler from '../handlers/healthHandler.js';
 import StatsHandler from '../handlers/statsHandler.js';
+import MessageHandler from '../handlers/messageHandler.js';
 import WhoHandler from '../handlers/whoHandler.js';
 import StatusLineHandler from '../handlers/statusLineHandler.js';
 import CommandManager from './commandManager.js';
 import Automator from './Automator.js';
 import '../util/Extensions.js';
-import { classifyLine, classifyBatch, patterns } from './classifier.js';
+import { classifyLine, classifyBatch, removeBackspaces, formatLine, patterns } from './classifier.js';
 
 export default class MudAutomator extends Automator {
   constructor(...args) {
@@ -35,6 +37,7 @@ export default class MudAutomator extends Automator {
     this.healthHandler = new HealthHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
     this.statsHandler = new StatsHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
     this.whoHandler = new WhoHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
+    this.messageHandler = new MessageHandler(this.eventBus, this.commandManager, this.gameState, this.playerStats);
 
     this.statusLineHandler = new StatusLineHandler(
       this.eventBus,
@@ -45,69 +48,93 @@ export default class MudAutomator extends Automator {
   }
 
   parse = (data) => {
-    const dataString = data.dataTransformed;
+    let dataString = data.dataTransformed;
 
-    // Store raw data
-    this.rawDataBuffer.push(dataString);
-    if (this.rawDataBuffer.length > this.maxRawDataBufferSize) {
-      this.rawDataBuffer.shift();
+    if (dataString.lastIndexOf("-=") > 0){
+        dataString = dataString.substring(dataString.lastIndexOf("-=")+2, dataString.length)
     }
-
-    // Prepend any incomplete line from the previous chunk
-    let fullData = this.incompleteLineBuffer + dataString;
-    this.incompleteLineBuffer = '';
-
-    // Split the data into lines
-    const lines = fullData
+      
+    const lines = dataString
       .split('\r\n')
       .flatMap((line) => line.split('\x1B[79D\x1B[K'))
       .filter((line) => line.trim() !== '');
+    
+    let newCurrentLine = "";
+    let newCurrentLineNumber = 0;
 
-    // console.log("lines", lines);
+    let newLines = new Map()
+      
+     // re do line lines so the line below is concatenated if the color
+    for (var i = 0; i < lines.length; i++) {
+       let thisLine = lines[i];
+       let currentLineParse = parse(thisLine)
+ 
+       if (currentLineParse.spans) {
+        // if a line has a color, its a new 'new' line
+        // if the line has no color, we assume its part of the previous 'new' line
 
-    // If the last line is incomplete, store it for the next chunk
-    if (!fullData.endsWith('\r\n')) {
-      this.incompleteLineBuffer = lines.pop();
+        // TODO: this may become an issue during combat but we will see
 
-      const classified = classifyLine(this.incompleteLineBuffer.stripAnsi());
+        // for the first iteration its going to be differnet
+        // append what we have to the line and move on
+        if (i == 0) {
+          newCurrentLine += (" " + lines[i])
+          continue;
+        }
 
-      if (classified && classified.event === 'status-line') {
-        this.eventBus.emit(classified.event, this.incompleteLineBuffer.stripAnsi(), classified.matches);
+        // now if the next line has no color.. we will assume its part of the previous line.. keep appending
+        // until we find a line with a color
+        if (currentLineParse.spans[0].color) {
+          // once we find a color.. push what we already had, rest the pushed line.
+          newLines.set(newCurrentLineNumber++, newCurrentLine)
+          
+          // reset the current New Line
+          // we have to consider that more will come if the next line has no color
+          // we will append until it has a color, 
+          newCurrentLine = lines[i];
+        } else {
+          newCurrentLine += (" " + lines[i])
+        }
+
+        if (i == (lines.length -1 )) {
+          newLines.set(newCurrentLineNumber++, newCurrentLine)
+        }
       }
     }
 
-    const parsedSpans = lines.map((line) => parse(line));
+    console.log(newLines)
 
-    this.processMessage(parsedSpans);
-  };
+    // a new map to hold the groups
+    let groupedMaps = new Map();
 
-  processMessage = (messages) => {
-    const lines = messages.flatMap((msg) => {
-      if (msg && msg.spans && msg.spans.length > 0) {
-        const strippedSpans = msg.spans.map((x) => x.text.stripAnsi());
-        const line = strippedSpans.join('');
+    newLines.forEach((value, key) => {
+      value = value.stripAnsi();
 
-        const classified = classifyLine(line);
-
-        if (classified?.parentEvent) {
-          this.eventBus.emit(classified.parentEvent, line, classified.matches);
-        }
-
-        if (classified?.event) {
-          this.eventBus.emit(classified.event, line, classified.matches);
-        }
-
-        return line;
+      // has backspace character, remove that and the one before
+      if (value.startsWith("Obvious exits:")){
+        value = removeBackspaces(value);
       }
-      return [];
-    });
 
-    const filteredLines = lines.map((line) => line.replace(patterns['status-line'], ''));
-    const classified = classifyBatch(filteredLines);
+      // classify each line, if it has a parent classification, add it to its own group to be processed at once
+      const classified = classifyLine(value);
+      if (classified) {
+        if (classified.parentEvent){
+          if (!groupedMaps.has(classified.parentEvent)){
+            groupedMaps.set(classified.parentEvent, new Map())
+          }
+          groupedMaps.get(classified.parentEvent).set(classified.event, classified.matches)
+        }
+      }
+    }) 
 
-    if (classified?.event) {
-      this.eventBus.emit(classified.event, lines, classified.matches);
+    if (groupedMaps.size > 0) {
+      this.processGroupedMessages(groupedMaps);
     }
+  }
+
+  // TODO: probably put this in its own handler if it gets out of hand
+  processGroupedMessages = (groupMessages) => {
+    this.eventBus.emit('process-messages', groupMessages);
   };
 
   updatePlayerStats = () => {
@@ -126,3 +153,4 @@ export default class MudAutomator extends Automator {
     this.socket.write(command + '\r');
   };
 }
+

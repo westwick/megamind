@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import RealmData from './realmData.js';
+import RealmData from './RealmData.js';
 
 describe('RealmData', () => {
   let realmData;

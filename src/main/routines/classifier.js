@@ -2,7 +2,7 @@
 /* eslint-disable max-len */
 /* eslint-disable no-control-regex */
 
-import RealmData from '../entities/realmData.js';
+import RealmData from '../entities/RealmData.js';
 
 const realmData = await RealmData.create('default');
 
@@ -42,7 +42,8 @@ const linePatterns = {
     'conversation-gossip': /^(?<player>\w+) gossips: (?<message>.+)/,
     'conversation-broadcast': /^Broadcast from (?<player>\w+) "(?<message>.+)"/,
     'conversation-gangpath': /^(?<player>\w+) gangpaths: (?<message>.+)/,
-    'conversation-telepath': [/^(?<player>\w+) telepaths: (?<message>.+)/, /^--- Telepath sent to (?<player>\w+) ---$/],
+    // TODO: duplicate matching name
+    // 'conversation-telepath': [/^(?<player>\w+) telepaths: (?<message>.+)/, /^--- Telepath sent to (?<player>\w+) ---$/],
     'conversation-yell': [/^(?<player>\w+) yells "(?<message>.+)"/, /^You yell "(?<message>.+)"/],
     'conversation-local': /^(?<player>\w+) says? "(?<message>.+)"/,
     'user-emote': /^\u001B\[K\u001B\[0;32m(?<player>You|[\w]+) (?<action>.*)(?:\.|!|\*)$/,
@@ -54,15 +55,20 @@ const linePatterns = {
     'user-equipped-failed': /^You may not wear that item!$/,
     'user-removed': /^You have removed (?<item>[\w ]+?)(?: and extinguished it)?\.$/,
     'user-equipped': [/^You are now wearing (?<item>[\w ]+)\.$/, /^You lit the (?<item>[\w ]+)\.$/],
-    'hidden-items': /^You notice (?<items>.*)(?:\r\n| )/,
+    // TODO: hidden-items isn't just hidden items.. not sure how we will categorise
+    //'hidden-items': /^You notice (?<items>.*)(?: here.)/,
     'user-list': /^The following items are for sale here:$/,
     'user-buys': /^You just bought (?:(?<qty>\d+) )?(?<item>[\w ]+) for (?<price>\d+) copper farthings\.$/,
   },
   room: {
-    'room-exits': /^Obvious exits: [\w, ]+/ms,
+    'obvious-exits': /^Obvious exits: (?<items>[\w, ]+)/,
+    'also-here' : /^Also here: (?<items>.*)(?:\r\n|.)/,
+    'you-notice': /^You notice (?<items>.*)(?: here.)/,
   },
-  status: {
-    'status-line': /^\[HP=(?<hp>\d{1,4})(?:\/(?<type>MA|KAI)=(?<mana>\d{1,3}))?(?:\s\((?<statea>Resting|Meditating)\)\s)?\]:(?:\s\((?<stateb>Resting|Meditating)\))?/,
+  statusLine: {
+    'status-line': /^\[HP=(?<hp>\d{1,4})(?:\/(?<type>MA|KAI)=(?<mana>\d{1,3}))?(?:\s\((?<statea>Resting|Meditating)\)\s)?\]:(?:\s\((?<stateb>Resting|Meditating)\))?/
+  },
+  userStatus : {
     'user-experience': /^Exp: (?<exp>\d+) Level: (?<level>\d+) Exp needed for next level: (?<need>\d+) \((?<req>\d+)\) \[(?<percent>\d+)%\]/,
     'user-profile': /^(Recent Deaths:|Location:)/,
     'user-encumbrance': /^Encumbrance:\s+\d+/,
@@ -121,24 +127,57 @@ const patterns = {
   }, {})
 };
 
+ function formatLine(message, targetEvent, patterns = linePatterns ) {
+  for (const [parentEvent, value] of Object.entries(patterns)) {
+    for (const [event, pattern] of Object.entries(value)) {
+      if (event == targetEvent) {
+        const match = message.match(pattern);
+        if (match){
+          if (match.groups){
+            return { parentEvent, event, matches: match.groups };
+          } else {
+            return { parentEvent, event, matches: match[1] }; // no idea why rooms won't match on a group.. 
+          }
+        }
+      }
+    }
+  }
+}
+
 function classifyLine(message, patterns = linePatterns) {
   for (const [parentEvent, value] of Object.entries(patterns)) {
     for (const [event, pattern] of Object.entries(value)) {
       if (Array.isArray(pattern)) {
         const match = pattern.find((p) => message.match(p));
-
         if (match) {
           return { parentEvent, event, matches: match.groups };
         }
       } else if (pattern instanceof RegExp) {
+
         const match = message.match(pattern);
 
         if (match) {
-          return { parentEvent, event, matches: match.groups };
+          if (match.groups){
+            return { parentEvent, event, matches: match.groups };
+          }
         }
       }
     }
   }
+}
+
+function removeBackspaces(str) {
+  let result = []; 
+   
+  for (let i = 0; i < str.length; i++) {
+      if (str[i] === '\b') {
+          result.pop();
+      } else {
+          result.push(str[i]);
+      }
+  }
+  
+  return result.join('');
 }
 
 function classifyBatch(lines) {
@@ -194,4 +233,4 @@ function classifyBatch(lines) {
   }
 }
 
-export { classifyLine, classifyBatch, patterns };
+export { classifyLine, classifyBatch, removeBackspaces, formatLine,  patterns };

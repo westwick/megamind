@@ -4,10 +4,11 @@
       <div class="flex items-center">
         <div
           class="icon-container"
-          :class="{ 'icon-active': isConnectedToServer }"
-          :title="
-            isConnectedToServer ? 'Disconnect from server' : 'Connect to server'
-          "
+          :class="{
+            'icon-disabled': !connectEnabled,
+            'icon-active': isConnectedToServer,
+          }"
+          :title="isConnectedToServer ? 'Disconnect from server' : 'Connect to server'"
           @click="handleConnection"
         >
           <PlugZap class="icon" :fill="isConnectedToServer ? 'yellow' : ''" />
@@ -99,6 +100,9 @@
         </div>
       </div>
       <div class="flex items-center">
+        <div v-if="showSaveButton" class="icon-container save-button" title="Save" @click="handleSave">
+          <Save class="icon" />
+        </div>
         <div
           class="icon-container settings-button"
           :class="{ active: isSettingsOpen }"
@@ -110,18 +114,17 @@
       </div>
     </div>
     <Transition name="slide">
-      <div v-show="isSettingsOpen" class="settings-area">
-        <AppSettings />
+      <div v-show="isSettingsOpen" ref="settingsArea" class="settings-area">
+        <AppSettings @config-dirty="onConfigDirty" />
       </div>
     </Transition>
   </div>
 </template>
 
 <script setup>
-import { computed } from "vue";
-import AppSettings from "./AppSettings.vue";
-import { ref } from "vue";
-import { useStore } from "vuex";
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+import AppSettings from './AppSettings.vue';
+import { useStore } from 'vuex';
 import {
   PlugZap,
   MoveUpRight,
@@ -135,13 +138,17 @@ import {
   Hand,
   Footprints,
   User,
-} from "lucide-vue-next";
+  Save,
+} from 'lucide-vue-next';
 
 const store = useStore();
 
-const isSettingsOpen = ref(false);
+const connectEnabled = ref(true);
+
+const showSaveButton = ref(false);
 const isConnectedToServer = ref(false);
 const isStopMoving = ref(true);
+const isSettingsOpen = computed(() => store.state.isSettingsOpen);
 
 const autoAll = computed(() => store.state.playerConfig.auto.autoAll);
 const autoCombat = computed(() => store.state.playerConfig.auto.autoCombat);
@@ -150,23 +157,69 @@ const autoBless = computed(() => store.state.playerConfig.auto.autoBless);
 const autoGet = computed(() => store.state.playerConfig.auto.autoGet);
 const autoSneak = computed(() => store.state.playerConfig.auto.autoSneak);
 
+const settingsArea = ref(null);
+
+const config = ref(null);
+
+const onConfigDirty = (newConfig) => {
+  config.value = newConfig;
+  showSaveButton.value = true;
+};
+
+const handleSave = () => {
+  window.electronAPI.saveProfile(JSON.parse(JSON.stringify(config.value)), true);
+  showSaveButton.value = false;
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
+
+window.electronAPI.onDisableConnect(() => {
+  connectEnabled.value = false;
+});
+
+window.electronAPI.onEnableConnect(() => {
+  connectEnabled.value = true;
+});
+
 const toggleSettings = () => {
-  isSettingsOpen.value = !isSettingsOpen.value;
+  // save the current config when settings are closed
+  if (isSettingsOpen.value) {
+    window.electronAPI.saveProfile(JSON.parse(JSON.stringify(config.value)), false);
+  }
+
+  store.commit('SET_IS_SETTINGS_OPEN', !isSettingsOpen.value);
+};
+
+const handleClickOutside = (event) => {
+  if (isSettingsOpen.value) {
+    // Check if click is outside both the settings button and settings area
+    const settingsButton = document.querySelector('.settings-button');
+
+    if (!settingsButton.contains(event.target) && !settingsArea.value.contains(event.target)) {
+      toggleSettings();
+    }
+  }
 };
 
 const toggleAutoAction = (actionName) => {
-  store.dispatch("playerConfig/updateConfig", {
-    section: "auto",
+  store.dispatch('playerConfig/updateConfig', {
+    section: 'auto',
     newConfig: { [actionName]: !store.state.playerConfig.auto[actionName] },
   });
 };
 
 const handleConnection = () => {
-  if (isConnectedToServer.value) {
-    console.log("sending disconnect at " + new Date().toISOString());
+  if (connectEnabled.value && isConnectedToServer.value) {
+    console.log('sending disconnect at ' + new Date().toISOString());
     window.electronAPI.disconnectFromServer();
     isConnectedToServer.value = false;
-  } else {
+  } else if (connectEnabled.value) {
     window.electronAPI.connectToServer();
     isConnectedToServer.value = true;
   }
@@ -174,22 +227,22 @@ const handleConnection = () => {
 
 const handleGoToLocation = () => {
   // Implement the go to location functionality
-  console.log("Go to location clicked");
+  console.log('Go to location clicked');
 };
 
 const handleLoopArea = () => {
   // Implement the loop area functionality
-  console.log("Loop area clicked");
+  console.log('Loop area clicked');
 };
 
 const handleStepBackwards = () => {
   // Implement the step backwards functionality
-  console.log("Step backwards clicked");
+  console.log('Step backwards clicked');
 };
 
 const handleStopMoving = () => {
   // Implement the stop moving functionality
-  console.log("Stop moving clicked");
+  console.log('Stop moving clicked');
 };
 </script>
 
@@ -262,5 +315,9 @@ const handleStopMoving = () => {
 
 .icon-active-red .icon {
   @apply text-red-500;
+}
+
+.save-button {
+  @apply text-yellow-500;
 }
 </style>
